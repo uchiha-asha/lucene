@@ -183,7 +183,7 @@
  * <p>Note: You cannot use a * or ? symbol as the first character of a search.
  *
  * <p>Note: Wildcards are not supported inside a phrase. Within double quotes, "*" and "?" are not
- * operators: the phrase text is passed to the analyzer unchanged, so the result depends on the
+ * operators: the phrase text is passed to the analyzer as plain text, so the result depends on the
  * analyzer. For example, with {@link org.apache.lucene.analysis.standard.StandardAnalyzer} the
  * query
  *
