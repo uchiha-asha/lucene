@@ -905,6 +905,20 @@ public class TestQueryParser extends QueryParserTestBase {
     assertEquals("rene? zellw*", parser.parse("René? Zellw*").toString(FIELD));
   }
 
+  /** Wildcards are not operators inside a phrase: the phrase text goes to the analyzer as is. */
+  public void testWildcardInsidePhraseIsAnalyzedAsText() throws ParseException {
+    // An analyzer that only keeps letters drops the wildcard characters.
+    QueryParser parser =
+        new QueryParser(FIELD, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    assertEquals(new PhraseQuery(FIELD, "foo", "bar"), parser.parse("\"foo bar*\""));
+    assertEquals(new PhraseQuery(FIELD, "foo", "b", "r"), parser.parse("\"foo b?r\""));
+
+    // An analyzer that keeps them produces literal terms, not a prefix or wildcard query.
+    parser = new QueryParser(FIELD, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
+    assertEquals(new PhraseQuery(FIELD, "foo", "bar*"), parser.parse("\"foo bar*\""));
+    assertEquals(new TermQuery(new Term(FIELD, "bar*")), parser.parse("\"bar*\""));
+  }
+
   public void testRangeQuery() throws ParseException {
     Analyzer a = new ASCIIAnalyzer();
     QueryParser parser = new QueryParser(FIELD, a);

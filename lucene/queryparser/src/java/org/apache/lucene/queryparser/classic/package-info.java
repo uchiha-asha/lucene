@@ -180,7 +180,19 @@
  *
  * <pre class="code">te*t</pre>
  *
- * <p>Note: You cannot use a * or ? symbol as the first character of a search. <a
+ * <p>Note: You cannot use a * or ? symbol as the first character of a search.
+ *
+ * <p>Note: Wildcards are not supported inside a phrase. Within double quotes, "*" and "?" are not
+ * operators: the phrase text is passed to the analyzer unchanged, so the result depends on the
+ * analyzer. For example, with {@link org.apache.lucene.analysis.standard.StandardAnalyzer} the
+ * query
+ *
+ * <pre class="code">"foo bar*"</pre>
+ *
+ * <p>becomes the phrase "foo bar", because the analyzer drops the "*"; with an analyzer that keeps
+ * the "*" it becomes a phrase that contains the literal term "bar*". No error is reported in either
+ * case. To use wildcards inside phrases, see {@link
+ * org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser}. <a
  * id="Regexp_Searches"></a>
  *
  * <h3 class="boxed">Regular Expression Searches</h3>
