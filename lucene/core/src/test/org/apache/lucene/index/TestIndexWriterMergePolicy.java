@@ -25,8 +25,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -42,11 +43,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.index.MockIndexWriterEventListener;
 import org.apache.lucene.tests.index.RandomIndexWriter;
-import org.apache.lucene.tests.mockfile.HandleLimitFS;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOFunction;
 
-@HandleLimitFS.MaxOpenHandles(limit = HandleLimitFS.MaxOpenHandles.MAX_OPEN_FILES * 2)
 // Some of these tests are too intense for SimpleText
 @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestIndexWriterMergePolicy extends LuceneTestCase {
@@ -706,15 +706,11 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
   }
 
-  // TODO: tests using stressUpdateSameDocumentWithMergeOnX have resource issues
-  @AwaitsFix(bugUrl = "https://github.com/apache/lucene/issues/14483")
   public void testStressUpdateSameDocumentWithMergeOnGetReader()
       throws IOException, InterruptedException {
     stressUpdateSameDocumentWithMergeOnX(true);
   }
 
-  // TODO: tests using stressUpdateSameDocumentWithMergeOnX have resource issues
-  @AwaitsFix(bugUrl = "https://github.com/apache/lucene/issues/14483")
   public void testStressUpdateSameDocumentWithMergeOnCommit()
       throws IOException, InterruptedException {
     stressUpdateSameDocumentWithMergeOnX(false);
@@ -722,6 +718,12 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   void stressUpdateSameDocumentWithMergeOnX(boolean useGetReader)
       throws IOException, InterruptedException {
+    // The indexing threads only update when given permits: a batch on each iteration of the main
+    // loop, which creates new segments, and a batch when each full-flush merge starts, so updates
+    // race with that merge. This bounds the number of segments and open files.
+    int numIterations = 10 + random().nextInt(TEST_NIGHTLY ? 500 : 100);
+    int updatesPerBatch = TestUtil.nextInt(random(), 5, TEST_NIGHTLY ? 100 : 20);
+    Semaphore updatesAllowed = new Semaphore(0);
     try (Directory directory = newDirectory()) {
       try (RandomIndexWriter writer =
           new RandomIndexWriter(
@@ -731,7 +733,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
                   .setMergePolicy(
                       new MergeOnXMergePolicy(
                           newMergePolicy(),
-                          useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT))
+                          useGetReader ? MergeTrigger.GET_READER : MergeTrigger.COMMIT,
+                          () -> updatesAllowed.release(updatesPerBatch)))
                   .setMaxFullFlushMergeWaitMillis(10 + random().nextInt(2000))
                   .setSoftDeletesField("soft_delete")
                   .setMergeScheduler(new ConcurrentMergeScheduler()))) {
@@ -740,9 +743,6 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         writer.updateDocument(new Term("id", "1"), d1);
         writer.commit();
 
-        AtomicInteger iters = new AtomicInteger(100 + random().nextInt(TEST_NIGHTLY ? 5000 : 1000));
-        AtomicInteger numFullFlushes =
-            new AtomicInteger(10 + random().nextInt(TEST_NIGHTLY ? 500 : 100));
         AtomicBoolean done = new AtomicBoolean(false);
         Thread[] threads = new Thread[1 + random().nextInt(4)];
         for (int i = 0; i < threads.length; i++) {
@@ -750,10 +750,12 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
               new Thread(
                   () -> {
                     try {
-                      while (iters.decrementAndGet() > 0 || numFullFlushes.get() > 0) {
-                        writer.updateDocument(new Term("id", "1"), d1);
-                        if (random().nextBoolean()) {
-                          writer.addDocument(new Document());
+                      while (done.get() == false) {
+                        if (updatesAllowed.tryAcquire(10, TimeUnit.MILLISECONDS)) {
+                          writer.updateDocument(new Term("id", "1"), d1);
+                          if (random().nextBoolean()) {
+                            writer.addDocument(new Document());
+                          }
                         }
                       }
                     } catch (Exception e) {
@@ -766,7 +768,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
           threads[i] = t;
         }
         try {
-          while (done.get() == false) {
+          for (int i = 0; i < numIterations && done.get() == false; i++) {
+            updatesAllowed.release(updatesPerBatch);
             if (useGetReader) {
               try (DirectoryReader reader = writer.getReader()) {
                 assertEquals(
@@ -791,10 +794,9 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
                         .value());
               }
             }
-            numFullFlushes.decrementAndGet();
           }
         } finally {
-          numFullFlushes.set(0);
+          done.set(true);
           for (Thread t : threads) {
             t.join();
           }
@@ -845,10 +847,21 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   private static class MergeOnXMergePolicy extends FilterMergePolicy {
     private final MergeTrigger trigger;
+    private final Runnable onFullFlushMergeStart;
 
     private MergeOnXMergePolicy(MergePolicy in, MergeTrigger trigger) {
+      this(in, trigger, () -> {});
+    }
+
+    /**
+     * @param onFullFlushMergeStart called once per full-flush merge, from the merge thread, after
+     *     the merge has taken its point-in-time view of the segments it merges
+     */
+    private MergeOnXMergePolicy(
+        MergePolicy in, MergeTrigger trigger, Runnable onFullFlushMergeStart) {
       super(in);
       this.trigger = trigger;
+      this.onFullFlushMergeStart = onFullFlushMergeStart;
     }
 
     @Override
@@ -864,7 +877,17 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         }
         if (nonMergingSegments.size() > 1) {
           MergeSpecification mergeSpecification = new MergeSpecification();
-          mergeSpecification.add(new OneMerge(nonMergingSegments));
+          AtomicBoolean started = new AtomicBoolean();
+          mergeSpecification.add(
+              new OneMerge(nonMergingSegments) {
+                @Override
+                public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+                  if (started.compareAndSet(false, true)) {
+                    onFullFlushMergeStart.run();
+                  }
+                  return super.wrapForMerge(reader);
+                }
+              });
           return mergeSpecification;
         }
       }
