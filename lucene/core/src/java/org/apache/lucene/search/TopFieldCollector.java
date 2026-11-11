@@ -57,6 +57,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         // we only get told when the threshold is crossed, which may have been in a previous segment
         comparator.setHitsThresholdReached();
       }
+      if (queueFull) {
+        // the queue was filled by a previous segment, so this leaf comparator may be asked to
+        // compareBottom before any competitive hit triggers a setBottom call
+        comparator.setBottom(bottom.slot);
+      }
       int[] reverseMuls = queue.getReverseMul();
       this.reverseMul = reverseMuls.length == 1 ? reverseMuls[0] : 1;
     }

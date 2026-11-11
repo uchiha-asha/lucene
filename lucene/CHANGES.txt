@@ -366,6 +366,10 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* GITHUB#12082: TopFieldCollector now calls LeafFieldComparator#setBottom on each new leaf
+  comparator when the queue is already full, so compareBottom is never called before setBottom.
+  (Asharam)
+
 * GITHUB#16983: UnifiedHighlighter.Builder#withFlags is no longer ignored when building the
   highlighter. (Christoph Büscher)
 

@@ -32,11 +32,13 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
@@ -732,6 +734,112 @@ public class TestTopFieldCollector extends LuceneTestCase {
         assertEquals(10, topDocs.totalHits.value());
         assertEquals(TotalHits.Relation.EQUAL_TO, topDocs.totalHits.relation());
       }
+    }
+  }
+
+  public void testSetBottomCalledOnEachLeafOnceQueueIsFull() throws Exception {
+    try (Directory dir = newDirectory();
+        IndexWriter w =
+            new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+      int value = 0;
+      for (int segment = 0; segment < 3; ++segment) {
+        for (int i = 0; i < 10; ++i) {
+          Document doc = new Document();
+          doc.add(new NumericDocValuesField("foo", value++));
+          w.addDocument(doc);
+        }
+        w.flush();
+      }
+
+      try (IndexReader reader = DirectoryReader.open(w)) {
+        assertTrue(reader.leaves().size() >= 3);
+        IndexSearcher searcher = new IndexSearcher(reader);
+        SortField checkedField = new SortField("foo", new SetBottomCheckingComparatorSource());
+        Sort[] sorts = {new Sort(checkedField), new Sort(checkedField, SortField.FIELD_DOC)};
+        FieldDoc[] afters = {
+          new FieldDoc(1, Float.NaN, new Object[] {1L}),
+          new FieldDoc(1, Float.NaN, new Object[] {1L, 1})
+        };
+        for (int i = 0; i < sorts.length; ++i) {
+          for (FieldDoc after : new FieldDoc[] {null, afters[i]}) {
+            TopFieldCollectorManager manager =
+                new TopFieldCollectorManager(sorts[i], 5, after, Integer.MAX_VALUE);
+            TopDocs topDocs = searcher.search(MatchAllDocsQuery.INSTANCE, manager);
+            assertEquals(30, topDocs.totalHits.value());
+            long expected = after == null ? 0 : 2;
+            for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+              assertEquals(expected++, ((FieldDoc) scoreDoc).fields[0]);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Sorts on a long doc-values field and fails if {@link LeafFieldComparator#compareBottom} is
+   * called on a leaf comparator that has not received {@link LeafFieldComparator#setBottom}.
+   */
+  private static class SetBottomCheckingComparatorSource extends FieldComparatorSource {
+    @Override
+    public FieldComparator<Long> newComparator(
+        String fieldname, int numHits, Pruning pruning, boolean reversed) {
+      return new FieldComparator<>() {
+        final long[] values = new long[numHits];
+        Long topValue;
+
+        @Override
+        public int compare(int slot1, int slot2) {
+          return Long.compare(values[slot1], values[slot2]);
+        }
+
+        @Override
+        public void setTopValue(Long value) {
+          topValue = value;
+        }
+
+        @Override
+        public Long value(int slot) {
+          return values[slot];
+        }
+
+        @Override
+        public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          NumericDocValues docValues = DocValues.getNumeric(context.reader(), fieldname);
+          return new LeafFieldComparator() {
+            // scoped to the leaf on purpose: setBottom must be called on every leaf comparator
+            int bottomSlot = -1;
+
+            private long valueOf(int doc) throws IOException {
+              return docValues.advanceExact(doc) ? docValues.longValue() : 0L;
+            }
+
+            @Override
+            public void setBottom(int slot) {
+              bottomSlot = slot;
+            }
+
+            @Override
+            public int compareBottom(int doc) throws IOException {
+              assertTrue("compareBottom called before setBottom", bottomSlot != -1);
+              return Long.compare(values[bottomSlot], valueOf(doc));
+            }
+
+            @Override
+            public int compareTop(int doc) throws IOException {
+              return Long.compare(topValue, valueOf(doc));
+            }
+
+            @Override
+            public void copy(int slot, int doc) throws IOException {
+              values[slot] = valueOf(doc);
+            }
+
+            @Override
+            public void setScorer(Scorable scorer) {}
+          };
+        }
+      };
     }
   }
 }
