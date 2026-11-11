@@ -924,6 +924,9 @@ Other
 
 * GITHUB#16516: Simplify array copy by ArrayUtil.copyOfSubArray() in grouping package (Binlong Gao)
 
+* GITHUB#14440: Document that the classic QueryParser does not treat "*" and "?" as wildcards inside
+  a phrase, and point to ComplexPhraseQueryParser for that. (Asharam)
+
 ======================= Lucene 10.5.2 =======================
 
 API Changes
