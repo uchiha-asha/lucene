@@ -25,7 +25,7 @@ import java.util.Arrays;
  */
 public final class LSBRadixSorter {
 
-  private static final int INSERTION_SORT_THRESHOLD = 30;
+  static final int INSERTION_SORT_THRESHOLD = 30;
   private static final int HISTOGRAM_SIZE = 256;
 
   private final int[] histogram = new int[HISTOGRAM_SIZE];
