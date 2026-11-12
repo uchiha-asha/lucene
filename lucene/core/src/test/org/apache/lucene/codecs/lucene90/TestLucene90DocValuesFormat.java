@@ -62,6 +62,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.ByteBuffersDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.Directory;
@@ -869,6 +870,100 @@ public class TestLucene90DocValuesFormat extends BaseCompressingDocValuesFormatT
       }
       r.close();
       dir.close();
+    }
+  }
+
+  /**
+   * Dense multi-valued fields reuse the end address of the previous doc when moving to the next
+   * doc. Check that values are correct regardless of how adjacent and non-adjacent docs are
+   * visited.
+   */
+  public void testDenseMultiValuedRandomAccessPatterns() throws IOException {
+    final int maxDoc = TestUtil.nextInt(random(), 1, 3) * 1000 + random().nextInt(1000);
+    final long[][] expectedNumbers = new long[maxDoc][];
+    final long[][] expectedOrds = new long[maxDoc][];
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter w =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()))) {
+        for (int i = 0; i < maxDoc; ++i) {
+          Document doc = new Document();
+          // every doc has at least one value so that fields are dense, the first doc has two so
+          // that fields are multi-valued
+          int numValues = i == 0 ? 2 : TestUtil.nextInt(random(), 1, 4);
+          expectedNumbers[i] = new long[numValues];
+          TreeSet<Long> ords = new TreeSet<>();
+          for (int j = 0; j < numValues; ++j) {
+            expectedNumbers[i][j] = random().nextInt(1000);
+            doc.add(new SortedNumericDocValuesField("snum", expectedNumbers[i][j]));
+            // terms are zero-padded so that their order is the order of ordinals
+            long ord = j == 0 && i < 100 ? i : random().nextInt(100);
+            ords.add(ord);
+            doc.add(
+                new SortedSetDocValuesField(
+                    "sset", newBytesRef(String.format(java.util.Locale.ROOT, "%03d", ord))));
+          }
+          Arrays.sort(expectedNumbers[i]);
+          expectedOrds[i] = ords.stream().mapToLong(Long::longValue).toArray();
+          w.addDocument(doc);
+        }
+        w.forceMerge(1);
+      }
+      try (DirectoryReader r = DirectoryReader.open(dir)) {
+        LeafReader leaf = getOnlyLeafReader(r);
+        for (int iter = 0; iter < 20; ++iter) {
+          SortedNumericDocValues numbers = leaf.getSortedNumericDocValues("snum");
+          SortedSetDocValues ords = leaf.getSortedSetDocValues("sset");
+          assertNull(DocValues.unwrapSingleton(numbers));
+          assertNull(DocValues.unwrapSingleton(ords));
+          assertEquals(maxDoc, numbers.cost());
+          assertEquals(maxDoc, ords.cost());
+          int doc = -1;
+          while (true) {
+            // move to the next doc most of the time, sometimes skip docs or stay on the same doc
+            int target =
+                switch (random().nextInt(8)) {
+                  case 0 -> doc + TestUtil.nextInt(random(), 2, 10);
+                  case 1 -> Math.max(doc, 0);
+                  default -> doc + 1;
+                };
+            boolean exact = random().nextBoolean() || target == doc;
+            if (target >= maxDoc) {
+              if (exact == false) {
+                assertEquals(DocIdSetIterator.NO_MORE_DOCS, numbers.advance(target));
+                assertEquals(DocIdSetIterator.NO_MORE_DOCS, ords.advance(target));
+              }
+              break;
+            }
+            if (exact) {
+              assertTrue(numbers.advanceExact(target));
+              assertTrue(ords.advanceExact(target));
+            } else if (target == doc + 1 && random().nextBoolean()) {
+              assertEquals(target, numbers.nextDoc());
+              assertEquals(target, ords.nextDoc());
+            } else {
+              assertEquals(target, numbers.advance(target));
+              assertEquals(target, ords.advance(target));
+            }
+            doc = target;
+            assertEquals(doc, numbers.docID());
+            assertEquals(doc, ords.docID());
+            assertEquals(expectedNumbers[doc].length, numbers.docValueCount());
+            assertEquals(expectedOrds[doc].length, ords.docValueCount());
+            // sometimes only consume some of the values, the next doc must not be affected
+            int numToConsume =
+                random().nextInt(4) == 0
+                    ? random().nextInt(expectedNumbers[doc].length + 1)
+                    : expectedNumbers[doc].length;
+            for (int i = 0; i < numToConsume; ++i) {
+              assertEquals(expectedNumbers[doc][i], numbers.nextValue());
+            }
+            numToConsume = Math.min(numToConsume, expectedOrds[doc].length);
+            for (int i = 0; i < numToConsume; ++i) {
+              assertEquals(expectedOrds[doc][i], ords.nextOrd());
+            }
+          }
+        }
+      }
     }
   }
 
