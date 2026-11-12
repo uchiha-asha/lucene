@@ -1,0 +1,1424 @@
+From d050a269793317cb957794d00d0952a72024bba8 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 12 Nov 2026 12:40:52 +0000
+Subject: [PATCH] Add JMH benchmarks used to evaluate the performance patches
+
+MultiValuedDocValuesIterationBenchmark, PostingsEnumAllocationBenchmark,
+SparsePointRangeQueryBenchmark, SparseFilterBulkScorerBenchmark and
+DenseFilterBulkScorerBenchmark all go through IndexSearcher (or LeafReader for the
+nextDoc variants), check in their setup that the implementation that they mean to
+measure is the one that runs, and can keep their index in the directory given by
+-Dbench.index.dir so that different builds of lucene-core can be compared on the
+very same index.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01EozJPtiJsJKEVATGbxEknG
+---
+ .../jmh/DenseFilterBulkScorerBenchmark.java   | 297 +++++++++++++++++
+ ...ultiValuedDocValuesIterationBenchmark.java | 299 +++++++++++++++++
+ .../jmh/PostingsEnumAllocationBenchmark.java  | 249 ++++++++++++++
+ .../jmh/SparseFilterBulkScorerBenchmark.java  | 305 ++++++++++++++++++
+ .../jmh/SparsePointRangeQueryBenchmark.java   | 213 ++++++++++++
+ 5 files changed, 1363 insertions(+)
+ create mode 100644 lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/DenseFilterBulkScorerBenchmark.java
+ create mode 100644 lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/MultiValuedDocValuesIterationBenchmark.java
+ create mode 100644 lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/PostingsEnumAllocationBenchmark.java
+ create mode 100644 lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparseFilterBulkScorerBenchmark.java
+ create mode 100644 lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparsePointRangeQueryBenchmark.java
+
+diff --git a/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/DenseFilterBulkScorerBenchmark.java b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/DenseFilterBulkScorerBenchmark.java
+new file mode 100644
+index 000000000..3875772ef
+--- /dev/null
++++ b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/DenseFilterBulkScorerBenchmark.java
+@@ -0,0 +1,297 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.lucene.benchmark.jmh;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Random;
++import java.util.concurrent.TimeUnit;
++import org.apache.lucene.document.Document;
++import org.apache.lucene.document.Field.Store;
++import org.apache.lucene.document.StringField;
++import org.apache.lucene.index.DirectoryReader;
++import org.apache.lucene.index.IndexReader;
++import org.apache.lucene.index.IndexWriter;
++import org.apache.lucene.index.IndexWriterConfig;
++import org.apache.lucene.index.LeafReaderContext;
++import org.apache.lucene.index.NoMergePolicy;
++import org.apache.lucene.index.Term;
++import org.apache.lucene.search.BooleanClause.Occur;
++import org.apache.lucene.search.BooleanQuery;
++import org.apache.lucene.search.Collector;
++import org.apache.lucene.search.DocIdStream;
++import org.apache.lucene.search.IndexSearcher;
++import org.apache.lucene.search.LRUQueryCache;
++import org.apache.lucene.search.LeafCollector;
++import org.apache.lucene.search.Query;
++import org.apache.lucene.search.QueryCachingPolicy;
++import org.apache.lucene.search.Scorable;
++import org.apache.lucene.search.ScoreMode;
++import org.apache.lucene.search.TermQuery;
++import org.apache.lucene.store.Directory;
++import org.apache.lucene.store.MMapDirectory;
++import org.apache.lucene.util.IOUtils;
++import org.apache.lucene.util.SuppressForbidden;
++import org.openjdk.jmh.annotations.Benchmark;
++import org.openjdk.jmh.annotations.BenchmarkMode;
++import org.openjdk.jmh.annotations.Fork;
++import org.openjdk.jmh.annotations.Level;
++import org.openjdk.jmh.annotations.Measurement;
++import org.openjdk.jmh.annotations.Mode;
++import org.openjdk.jmh.annotations.OutputTimeUnit;
++import org.openjdk.jmh.annotations.Param;
++import org.openjdk.jmh.annotations.Scope;
++import org.openjdk.jmh.annotations.Setup;
++import org.openjdk.jmh.annotations.State;
++import org.openjdk.jmh.annotations.TearDown;
++import org.openjdk.jmh.annotations.Warmup;
++
++/**
++ * Benchmarks collecting all matches of filters that match more than 1/32th of the docs of a segment
++ * and do not need scores, which are evaluated one window of doc IDs at a time by {@code
++ * DenseConjunctionBulkScorer}.
++ *
++ * <ul>
++ *   <li>{@code query} is either a single term filter that matches {@code percent}% of docs, or the
++ *       conjunction of this filter with another filter that matches 50% of docs, or the single
++ *       filter served from the query cache, i.e. a bit set that was computed by a previous search.
++ *   <li>The benchmark methods differ by what the collector does: only counting matches in bulk
++ *       through {@link DocIdStream#count()}, or a cheap computation per doc.
++ * </ul>
++ */
++@State(Scope.Thread)
++@BenchmarkMode(Mode.AverageTime)
++@OutputTimeUnit(TimeUnit.MICROSECONDS)
++@Warmup(iterations = 3, time = 1)
++@Measurement(iterations = 5, time = 1)
++@Fork(
++    value = 3,
++    jvmArgsAppend = {"-Xmx2g", "-Xms2g", "-XX:+AlwaysPreTouch"})
++public class DenseFilterBulkScorerBenchmark {
++
++  private static final int NUM_DOCS = 4_000_000;
++  private static final int[] PERCENTS = {10, 50};
++
++  @Param({"single", "conjunction", "cached"})
++  String query;
++
++  /** Percentage of docs that the filter matches. */
++  @Param({"10", "50"})
++  int percent;
++
++  /** Percentage of deleted docs. */
++  @Param({"0", "5"})
++  int deletedPercent;
++
++  private Directory dir;
++  private IndexReader reader;
++  private IndexSearcher searcher;
++  private Path path;
++  private boolean deleteIndexOnTearDown;
++  private Query filter;
++  private long checksum;
++
++  @Setup(Level.Trial)
++  public void setup() throws IOException {
++    path = indexPath("denseFilter-" + deletedPercent);
++    dir = MMapDirectory.open(path);
++    if (isComplete(path) == false) {
++      Random random = new Random(42);
++      try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig().setRAMBufferSizeMB(256))) {
++        for (int i = 0; i < NUM_DOCS; i++) {
++          Document doc = new Document();
++          for (int percent : PERCENTS) {
++            if (random.nextInt(100) < percent) {
++              doc.add(new StringField("percent" + percent, "x", Store.NO));
++            }
++          }
++          if (random.nextBoolean()) {
++            doc.add(new StringField("other", "x", Store.NO));
++          }
++          if (random.nextInt(100) < deletedPercent) {
++            doc.add(new StringField("deleted", "x", Store.NO));
++          }
++          w.addDocument(doc);
++        }
++        w.forceMerge(1);
++      }
++      if (deletedPercent > 0) {
++        try (IndexWriter w =
++            new IndexWriter(dir, new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
++          w.deleteDocuments(new Term("deleted", "x"));
++        }
++      }
++      markComplete(path);
++    }
++    reader = DirectoryReader.open(dir);
++    if (reader.leaves().size() != 1
++        || reader.leaves().get(0).reader().hasDeletions() != (deletedPercent > 0)) {
++      throw new AssertionError("Expected a single segment with " + deletedPercent + "% deletes");
++    }
++    searcher = new IndexSearcher(reader);
++    if (query.equals("cached")) {
++      // Cache every filter the first time that it is used.
++      searcher.setQueryCache(new LRUQueryCache(16, 1 << 26, _ -> true, 1f));
++      searcher.setQueryCachingPolicy(
++          new QueryCachingPolicy() {
++            @Override
++            public void onUse(Query query) {}
++
++            @Override
++            public boolean shouldCache(Query query) {
++              return true;
++            }
++          });
++    } else {
++      searcher.setQueryCache(null);
++    }
++    BooleanQuery.Builder builder =
++        new BooleanQuery.Builder()
++            .add(new TermQuery(new Term("percent" + percent, "x")), Occur.FILTER);
++    if (query.equals("conjunction")) {
++      builder.add(new TermQuery(new Term("other", "x")), Occur.FILTER);
++    }
++    filter = builder.build();
++
++    if (query.equals("cached")) {
++      // Populate the cache by running the search once.
++      count();
++      LRUQueryCache cache = (LRUQueryCache) searcher.getQueryCache();
++      if (cache.getCacheSize() != 1) {
++        throw new AssertionError("Expected the filter to be cached");
++      }
++    }
++
++    // Make sure that we are benchmarking the bulk scorer that we think we are benchmarking.
++    LeafReaderContext leaf = reader.leaves().get(0);
++    String bulkScorer =
++        searcher
++            .createWeight(searcher.rewrite(filter), ScoreMode.COMPLETE_NO_SCORES, 1f)
++            .bulkScorer(leaf)
++            .getClass()
++            .getSimpleName();
++    if (bulkScorer.equals("DenseConjunctionBulkScorer") == false) {
++      throw new AssertionError("Expected DenseConjunctionBulkScorer, got " + bulkScorer);
++    }
++  }
++
++  @TearDown(Level.Trial)
++  @SuppressForbidden(
++      reason = "prints the checksum so that runs of different builds can be compared")
++  public void tearDown() throws IOException {
++    System.out.println(
++        "checksum(query="
++            + query
++            + ",percent="
++            + percent
++            + ",deletedPercent="
++            + deletedPercent
++            + ")="
++            + checksum);
++    reader.close();
++    dir.close();
++    deleteIndexIfTemporary();
++  }
++
++  /**
++   * Returns the directory of the index for the given parameters and whether it needs to be built.
++   * If the {@code bench.index.dir} system property is set, indexes are kept there and reused by
++   * later runs, so that different builds of Lucene can be compared on the very same index.
++   */
++  private Path indexPath(String name) throws IOException {
++    String base = System.getProperty("bench.index.dir");
++    if (base == null) {
++      deleteIndexOnTearDown = true;
++      return Files.createTempDirectory(name);
++    }
++    deleteIndexOnTearDown = false;
++    return Files.createDirectories(Path.of(base, name));
++  }
++
++  private static boolean isComplete(Path path) {
++    return Files.exists(path.resolve("complete"));
++  }
++
++  private static void markComplete(Path path) throws IOException {
++    Files.createFile(path.resolve("complete"));
++  }
++
++  private void deleteIndexIfTemporary() throws IOException {
++    if (deleteIndexOnTearDown) {
++      IOUtils.rm(path);
++    }
++  }
++
++  private abstract static class SimpleCollector implements Collector {
++    @Override
++    public ScoreMode scoreMode() {
++      return ScoreMode.COMPLETE_NO_SCORES;
++    }
++  }
++
++  /** The collector does a cheap computation on every doc, in doc ID order. */
++  @Benchmark
++  public long collectDocIds() throws IOException {
++    long[] sum = new long[1];
++    searcher.search(
++        filter,
++        new SimpleCollector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) {
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) {
++                sum[0] = sum[0] * 31 + doc;
++              }
++            };
++          }
++        });
++    return checksum = sum[0];
++  }
++
++  /** The collector only counts matches, in bulk whenever it is given the opportunity. */
++  @Benchmark
++  public long count() throws IOException {
++    long[] count = new long[1];
++    searcher.search(
++        filter,
++        new SimpleCollector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) {
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) {
++                count[0]++;
++              }
++
++              @Override
++              public void collect(DocIdStream stream) throws IOException {
++                count[0] += stream.count();
++              }
++            };
++          }
++        });
++    return checksum = count[0];
++  }
++}
+diff --git a/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/MultiValuedDocValuesIterationBenchmark.java b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/MultiValuedDocValuesIterationBenchmark.java
+new file mode 100644
+index 000000000..1a18aa1a4
+--- /dev/null
++++ b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/MultiValuedDocValuesIterationBenchmark.java
+@@ -0,0 +1,299 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.lucene.benchmark.jmh;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Random;
++import java.util.concurrent.TimeUnit;
++import org.apache.lucene.document.Document;
++import org.apache.lucene.document.Field.Store;
++import org.apache.lucene.document.SortedNumericDocValuesField;
++import org.apache.lucene.document.SortedSetDocValuesField;
++import org.apache.lucene.document.StringField;
++import org.apache.lucene.index.DirectoryReader;
++import org.apache.lucene.index.DocValues;
++import org.apache.lucene.index.IndexReader;
++import org.apache.lucene.index.IndexWriter;
++import org.apache.lucene.index.IndexWriterConfig;
++import org.apache.lucene.index.LeafReader;
++import org.apache.lucene.index.LeafReaderContext;
++import org.apache.lucene.index.SortedNumericDocValues;
++import org.apache.lucene.index.SortedSetDocValues;
++import org.apache.lucene.index.Term;
++import org.apache.lucene.search.BooleanClause.Occur;
++import org.apache.lucene.search.BooleanQuery;
++import org.apache.lucene.search.Collector;
++import org.apache.lucene.search.DocIdSetIterator;
++import org.apache.lucene.search.IndexSearcher;
++import org.apache.lucene.search.LeafCollector;
++import org.apache.lucene.search.MatchAllDocsQuery;
++import org.apache.lucene.search.Query;
++import org.apache.lucene.search.Scorable;
++import org.apache.lucene.search.ScoreMode;
++import org.apache.lucene.search.TermQuery;
++import org.apache.lucene.store.Directory;
++import org.apache.lucene.store.MMapDirectory;
++import org.apache.lucene.util.BytesRef;
++import org.apache.lucene.util.IOUtils;
++import org.apache.lucene.util.SuppressForbidden;
++import org.openjdk.jmh.annotations.Benchmark;
++import org.openjdk.jmh.annotations.BenchmarkMode;
++import org.openjdk.jmh.annotations.Fork;
++import org.openjdk.jmh.annotations.Level;
++import org.openjdk.jmh.annotations.Measurement;
++import org.openjdk.jmh.annotations.Mode;
++import org.openjdk.jmh.annotations.OutputTimeUnit;
++import org.openjdk.jmh.annotations.Param;
++import org.openjdk.jmh.annotations.Scope;
++import org.openjdk.jmh.annotations.Setup;
++import org.openjdk.jmh.annotations.State;
++import org.openjdk.jmh.annotations.TearDown;
++import org.openjdk.jmh.annotations.Warmup;
++
++/**
++ * Benchmarks reading every value of a dense multi-valued doc-values field (SORTED_SET or
++ * SORTED_NUMERIC), the access pattern of faceting / aggregations: either for the docs that match a
++ * filter through {@link IndexSearcher#search} and {@code advanceExact}, or for all docs of the
++ * field through {@code nextDoc}.
++ *
++ * <p>{@code matchPercent} controls how many docs the filter matches, hence how often two
++ * consecutively collected docs are adjacent: 100 only visits adjacent docs, 1 almost never does.
++ */
++@State(Scope.Thread)
++@BenchmarkMode(Mode.AverageTime)
++@OutputTimeUnit(TimeUnit.MILLISECONDS)
++@Warmup(iterations = 3, time = 1)
++@Measurement(iterations = 5, time = 1)
++@Fork(
++    value = 3,
++    jvmArgsAppend = {"-Xmx2g", "-Xms2g", "-XX:+AlwaysPreTouch"})
++public class MultiValuedDocValuesIterationBenchmark {
++
++  private static final int NUM_DOCS = 2_000_000;
++  private static final int NUM_TERMS = 1_000;
++  private static final int MAX_VALUES_PER_DOC = 4;
++
++  @Param({"100", "50", "10", "1"})
++  int matchPercent;
++
++  private Directory dir;
++  private IndexReader reader;
++  private IndexSearcher searcher;
++  private Path path;
++  private boolean deleteIndexOnTearDown;
++  private Query query;
++  private long checksum;
++
++  @Setup(Level.Trial)
++  public void setup() throws IOException {
++    path = indexPath("multiValuedDV");
++    dir = MMapDirectory.open(path);
++    Random random = new Random(42);
++    if (isComplete(path) == false) {
++      try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig())) {
++        BytesRef[] terms = new BytesRef[NUM_TERMS];
++        for (int i = 0; i < NUM_TERMS; i++) {
++          terms[i] = new BytesRef(String.format(java.util.Locale.ROOT, "term%04d", i));
++        }
++        for (int i = 0; i < NUM_DOCS; i++) {
++          Document doc = new Document();
++          // every doc has between 1 and 4 values so that both fields are dense and multi-valued
++          int numValues = 1 + random.nextInt(MAX_VALUES_PER_DOC);
++          for (int j = 0; j < numValues; j++) {
++            doc.add(new SortedSetDocValuesField("sset", terms[random.nextInt(NUM_TERMS)]));
++            doc.add(new SortedNumericDocValuesField("snum", random.nextInt(1_000_000)));
++          }
++          int r = random.nextInt(100);
++          if (r < 50) {
++            doc.add(new StringField("filter", "p50", Store.NO));
++          }
++          if (r < 10) {
++            doc.add(new StringField("filter", "p10", Store.NO));
++          }
++          if (r < 1) {
++            doc.add(new StringField("filter", "p1", Store.NO));
++          }
++          w.addDocument(doc);
++        }
++        w.forceMerge(1);
++      }
++      markComplete(path);
++    }
++    reader = DirectoryReader.open(dir);
++    searcher = new IndexSearcher(reader);
++    searcher.setQueryCache(null);
++    if (matchPercent == 100) {
++      query = new MatchAllDocsQuery();
++    } else {
++      query =
++          new BooleanQuery.Builder()
++              .add(new TermQuery(new Term("filter", "p" + matchPercent)), Occur.FILTER)
++              .build();
++    }
++
++    // Make sure that we are benchmarking the dense multi-valued implementation.
++    LeafReader leaf = reader.leaves().get(0).reader();
++    if (reader.leaves().size() != 1
++        || DocValues.unwrapSingleton(leaf.getSortedSetDocValues("sset")) != null
++        || DocValues.unwrapSingleton(leaf.getSortedNumericDocValues("snum")) != null
++        || leaf.getSortedSetDocValues("sset").cost() != leaf.maxDoc()
++        || leaf.getSortedNumericDocValues("snum").cost() != leaf.maxDoc()) {
++      throw new AssertionError("Expected a single segment with dense multi-valued fields");
++    }
++  }
++
++  @TearDown(Level.Trial)
++  @SuppressForbidden(
++      reason = "prints the checksum so that runs of different builds can be compared")
++  public void tearDown() throws IOException {
++    System.out.println("checksum(matchPercent=" + matchPercent + ")=" + checksum);
++    reader.close();
++    dir.close();
++    deleteIndexIfTemporary();
++  }
++
++  /**
++   * Returns the directory of the index for the given parameters and whether it needs to be built.
++   * If the {@code bench.index.dir} system property is set, indexes are kept there and reused by
++   * later runs, so that different builds of Lucene can be compared on the very same index.
++   */
++  private Path indexPath(String name) throws IOException {
++    String base = System.getProperty("bench.index.dir");
++    if (base == null) {
++      deleteIndexOnTearDown = true;
++      return Files.createTempDirectory(name);
++    }
++    deleteIndexOnTearDown = false;
++    return Files.createDirectories(Path.of(base, name));
++  }
++
++  private static boolean isComplete(Path path) {
++    return Files.exists(path.resolve("complete"));
++  }
++
++  private static void markComplete(Path path) throws IOException {
++    Files.createFile(path.resolve("complete"));
++  }
++
++  private void deleteIndexIfTemporary() throws IOException {
++    if (deleteIndexOnTearDown) {
++      IOUtils.rm(path);
++    }
++  }
++
++  /** Sum ordinals of all values of docs that match the filter, like faceting would do. */
++  @Benchmark
++  public long sortedSetCollect() throws IOException {
++    long[] sum = new long[1];
++    searcher.search(
++        query,
++        new Collector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
++            SortedSetDocValues values = context.reader().getSortedSetDocValues("sset");
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) throws IOException {
++                if (values.advanceExact(doc)) {
++                  for (int i = 0, count = values.docValueCount(); i < count; i++) {
++                    sum[0] += values.nextOrd();
++                  }
++                }
++              }
++            };
++          }
++
++          @Override
++          public ScoreMode scoreMode() {
++            return ScoreMode.COMPLETE_NO_SCORES;
++          }
++        });
++    return checksum = sum[0];
++  }
++
++  /** Sum all values of docs that match the filter, like a sum aggregation would do. */
++  @Benchmark
++  public long sortedNumericCollect() throws IOException {
++    long[] sum = new long[1];
++    searcher.search(
++        query,
++        new Collector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
++            SortedNumericDocValues values = context.reader().getSortedNumericDocValues("snum");
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) throws IOException {
++                if (values.advanceExact(doc)) {
++                  for (int i = 0, count = values.docValueCount(); i < count; i++) {
++                    sum[0] += values.nextValue();
++                  }
++                }
++              }
++            };
++          }
++
++          @Override
++          public ScoreMode scoreMode() {
++            return ScoreMode.COMPLETE_NO_SCORES;
++          }
++        });
++    return checksum = sum[0];
++  }
++
++  /** Iterate over all docs and ordinals with nextDoc(), independently of the filter. */
++  @Benchmark
++  public long sortedSetNextDoc() throws IOException {
++    long sum = 0;
++    for (LeafReaderContext context : reader.leaves()) {
++      SortedSetDocValues values = context.reader().getSortedSetDocValues("sset");
++      for (int doc = values.nextDoc();
++          doc != DocIdSetIterator.NO_MORE_DOCS;
++          doc = values.nextDoc()) {
++        for (int i = 0, count = values.docValueCount(); i < count; i++) {
++          sum += values.nextOrd();
++        }
++      }
++    }
++    return checksum = sum;
++  }
++
++  /** Iterate over all docs and values with nextDoc(), independently of the filter. */
++  @Benchmark
++  public long sortedNumericNextDoc() throws IOException {
++    long sum = 0;
++    for (LeafReaderContext context : reader.leaves()) {
++      SortedNumericDocValues values = context.reader().getSortedNumericDocValues("snum");
++      for (int doc = values.nextDoc();
++          doc != DocIdSetIterator.NO_MORE_DOCS;
++          doc = values.nextDoc()) {
++        for (int i = 0, count = values.docValueCount(); i < count; i++) {
++          sum += values.nextValue();
++        }
++      }
++    }
++    return checksum = sum;
++  }
++}
+diff --git a/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/PostingsEnumAllocationBenchmark.java b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/PostingsEnumAllocationBenchmark.java
+new file mode 100644
+index 000000000..c481b491e
+--- /dev/null
++++ b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/PostingsEnumAllocationBenchmark.java
+@@ -0,0 +1,249 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.lucene.benchmark.jmh;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Locale;
++import java.util.Random;
++import java.util.concurrent.TimeUnit;
++import org.apache.lucene.document.Document;
++import org.apache.lucene.document.Field.Store;
++import org.apache.lucene.document.SortedDocValuesField;
++import org.apache.lucene.document.StringField;
++import org.apache.lucene.index.DirectoryReader;
++import org.apache.lucene.index.IndexReader;
++import org.apache.lucene.index.IndexWriter;
++import org.apache.lucene.index.IndexWriterConfig;
++import org.apache.lucene.index.LeafReaderContext;
++import org.apache.lucene.index.NoMergePolicy;
++import org.apache.lucene.index.Term;
++import org.apache.lucene.search.BooleanClause.Occur;
++import org.apache.lucene.search.BooleanQuery;
++import org.apache.lucene.search.Collector;
++import org.apache.lucene.search.IndexSearcher;
++import org.apache.lucene.search.LeafCollector;
++import org.apache.lucene.search.Query;
++import org.apache.lucene.search.Scorable;
++import org.apache.lucene.search.ScoreMode;
++import org.apache.lucene.search.Sort;
++import org.apache.lucene.search.SortField;
++import org.apache.lucene.search.TermQuery;
++import org.apache.lucene.search.TopDocs;
++import org.apache.lucene.store.Directory;
++import org.apache.lucene.store.MMapDirectory;
++import org.apache.lucene.util.BytesRef;
++import org.apache.lucene.util.IOUtils;
++import org.apache.lucene.util.SuppressForbidden;
++import org.openjdk.jmh.annotations.Benchmark;
++import org.openjdk.jmh.annotations.BenchmarkMode;
++import org.openjdk.jmh.annotations.Fork;
++import org.openjdk.jmh.annotations.Level;
++import org.openjdk.jmh.annotations.Measurement;
++import org.openjdk.jmh.annotations.Mode;
++import org.openjdk.jmh.annotations.OutputTimeUnit;
++import org.openjdk.jmh.annotations.Param;
++import org.openjdk.jmh.annotations.Scope;
++import org.openjdk.jmh.annotations.Setup;
++import org.openjdk.jmh.annotations.State;
++import org.openjdk.jmh.annotations.TearDown;
++import org.openjdk.jmh.annotations.Warmup;
++
++/**
++ * Benchmarks searches whose cost is dominated by pulling many postings enums rather than by
++ * iterating postings: disjunctions of many low-frequency terms and sorting by a high-cardinality
++ * keyword field (whose comparator skips non-competitive docs via the postings of competitive
++ * terms). {@link #denseTermFilter} is a control which iterates a single dense postings list.
++ */
++@State(Scope.Thread)
++@BenchmarkMode(Mode.AverageTime)
++@OutputTimeUnit(TimeUnit.MICROSECONDS)
++@Warmup(iterations = 3, time = 1)
++@Measurement(iterations = 5, time = 1)
++@Fork(
++    value = 3,
++    jvmArgsAppend = {"-Xmx2g", "-Xms2g", "-XX:+AlwaysPreTouch"})
++public class PostingsEnumAllocationBenchmark {
++
++  private static final int NUM_DOCS = 1_000_000;
++  private static final int NUM_IDS = 100_000;
++
++  /** Number of segments of the index. */
++  @Param({"1", "20"})
++  int numSegments;
++
++  private Directory dir;
++  private IndexReader reader;
++  private IndexSearcher searcher;
++  private Path path;
++  private boolean deleteIndexOnTearDown;
++  private Query idsQuery64, idsQuery1024;
++  private Query denseFilter;
++  private Sort sort;
++  private long checksum;
++
++  @Setup(Level.Trial)
++  public void setup() throws IOException {
++    path = indexPath("postingsEnumAllocation-" + numSegments);
++    dir = MMapDirectory.open(path);
++    Random random = new Random(42);
++    IndexWriterConfig config = new IndexWriterConfig();
++    if (numSegments > 1) {
++      config
++          .setMergePolicy(NoMergePolicy.INSTANCE)
++          .setMaxBufferedDocs(NUM_DOCS / numSegments)
++          .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
++    }
++    if (isComplete(path) == false) {
++      try (IndexWriter w = new IndexWriter(dir, config)) {
++        for (int i = 0; i < NUM_DOCS; i++) {
++          Document doc = new Document();
++          // 10 docs per id on average
++          BytesRef id = new BytesRef(String.format(Locale.ROOT, "id%06d", random.nextInt(NUM_IDS)));
++          doc.add(new StringField("id", id, Store.NO));
++          doc.add(new SortedDocValuesField("id", id));
++          // 50% of docs
++          if (random.nextBoolean()) {
++            doc.add(new StringField("flag", "on", Store.NO));
++          }
++          w.addDocument(doc);
++        }
++        if (numSegments == 1) {
++          w.forceMerge(1);
++        }
++      }
++      markComplete(path);
++    }
++    reader = DirectoryReader.open(dir);
++    if (reader.leaves().size() != numSegments) {
++      throw new AssertionError(
++          "Expected " + numSegments + " segments, got " + reader.leaves().size());
++    }
++    searcher = new IndexSearcher(reader);
++    searcher.setQueryCache(null);
++    idsQuery64 = idsQuery(random, 64);
++    idsQuery1024 = idsQuery(random, 1024);
++    denseFilter =
++        new BooleanQuery.Builder().add(new TermQuery(new Term("flag", "on")), Occur.FILTER).build();
++    sort = new Sort(new SortField("id", SortField.Type.STRING));
++  }
++
++  private static Query idsQuery(Random random, int numIds) {
++    BooleanQuery.Builder builder = new BooleanQuery.Builder();
++    for (int i = 0; i < numIds; i++) {
++      String id = String.format(Locale.ROOT, "id%06d", random.nextInt(NUM_IDS));
++      builder.add(new TermQuery(new Term("id", id)), Occur.SHOULD);
++    }
++    return new BooleanQuery.Builder().add(builder.build(), Occur.FILTER).build();
++  }
++
++  @TearDown(Level.Trial)
++  @SuppressForbidden(
++      reason = "prints the checksum so that runs of different builds can be compared")
++  public void tearDown() throws IOException {
++    System.out.println("checksum(numSegments=" + numSegments + ")=" + checksum);
++    reader.close();
++    dir.close();
++    deleteIndexIfTemporary();
++  }
++
++  /**
++   * Returns the directory of the index for the given parameters and whether it needs to be built.
++   * If the {@code bench.index.dir} system property is set, indexes are kept there and reused by
++   * later runs, so that different builds of Lucene can be compared on the very same index.
++   */
++  private Path indexPath(String name) throws IOException {
++    String base = System.getProperty("bench.index.dir");
++    if (base == null) {
++      deleteIndexOnTearDown = true;
++      return Files.createTempDirectory(name);
++    }
++    deleteIndexOnTearDown = false;
++    return Files.createDirectories(Path.of(base, name));
++  }
++
++  private static boolean isComplete(Path path) {
++    return Files.exists(path.resolve("complete"));
++  }
++
++  private static void markComplete(Path path) throws IOException {
++    Files.createFile(path.resolve("complete"));
++  }
++
++  private void deleteIndexIfTemporary() throws IOException {
++    if (deleteIndexOnTearDown) {
++      IOUtils.rm(path);
++    }
++  }
++
++  private long collect(Query query) throws IOException {
++    long[] sum = new long[1];
++    searcher.search(
++        query,
++        new Collector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) {
++            final int docBase = context.docBase;
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) {
++                sum[0] = sum[0] * 31 + docBase + doc;
++              }
++            };
++          }
++
++          @Override
++          public ScoreMode scoreMode() {
++            return ScoreMode.COMPLETE_NO_SCORES;
++          }
++        });
++    return checksum = sum[0];
++  }
++
++  /** Filter on a disjunction of 64 low-frequency terms. */
++  @Benchmark
++  public long disjunctionOf64Ids() throws IOException {
++    return collect(idsQuery64);
++  }
++
++  /** Filter on a disjunction of 1024 low-frequency terms. */
++  @Benchmark
++  public long disjunctionOf1024Ids() throws IOException {
++    return collect(idsQuery1024);
++  }
++
++  /** Sort docs that match a dense filter by a high-cardinality keyword field. */
++  @Benchmark
++  public long sortByKeyword() throws IOException {
++    TopDocs topDocs = searcher.search(denseFilter, 10, sort);
++    long sum = topDocs.totalHits.value();
++    for (int i = 0; i < topDocs.scoreDocs.length; i++) {
++      sum = sum * 31 + topDocs.scoreDocs[i].doc;
++    }
++    return checksum = sum;
++  }
++
++  /** Control: iterate over all docs of a single dense postings list. */
++  @Benchmark
++  public long denseTermFilter() throws IOException {
++    return collect(denseFilter);
++  }
++}
+diff --git a/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparseFilterBulkScorerBenchmark.java b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparseFilterBulkScorerBenchmark.java
+new file mode 100644
+index 000000000..0bb58d09a
+--- /dev/null
++++ b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparseFilterBulkScorerBenchmark.java
+@@ -0,0 +1,305 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.lucene.benchmark.jmh;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Random;
++import java.util.concurrent.TimeUnit;
++import org.apache.lucene.document.Document;
++import org.apache.lucene.document.Field.Store;
++import org.apache.lucene.document.IntPoint;
++import org.apache.lucene.document.NumericDocValuesField;
++import org.apache.lucene.document.StringField;
++import org.apache.lucene.index.DirectoryReader;
++import org.apache.lucene.index.IndexReader;
++import org.apache.lucene.index.IndexWriter;
++import org.apache.lucene.index.IndexWriterConfig;
++import org.apache.lucene.index.LeafReaderContext;
++import org.apache.lucene.index.NoMergePolicy;
++import org.apache.lucene.index.NumericDocValues;
++import org.apache.lucene.index.Term;
++import org.apache.lucene.search.BooleanClause.Occur;
++import org.apache.lucene.search.BooleanQuery;
++import org.apache.lucene.search.Collector;
++import org.apache.lucene.search.DocIdStream;
++import org.apache.lucene.search.IndexSearcher;
++import org.apache.lucene.search.LeafCollector;
++import org.apache.lucene.search.Query;
++import org.apache.lucene.search.Scorable;
++import org.apache.lucene.search.ScoreMode;
++import org.apache.lucene.search.TermQuery;
++import org.apache.lucene.store.Directory;
++import org.apache.lucene.store.MMapDirectory;
++import org.apache.lucene.util.IOUtils;
++import org.apache.lucene.util.SuppressForbidden;
++import org.openjdk.jmh.annotations.Benchmark;
++import org.openjdk.jmh.annotations.BenchmarkMode;
++import org.openjdk.jmh.annotations.Fork;
++import org.openjdk.jmh.annotations.Level;
++import org.openjdk.jmh.annotations.Measurement;
++import org.openjdk.jmh.annotations.Mode;
++import org.openjdk.jmh.annotations.OutputTimeUnit;
++import org.openjdk.jmh.annotations.Param;
++import org.openjdk.jmh.annotations.Scope;
++import org.openjdk.jmh.annotations.Setup;
++import org.openjdk.jmh.annotations.State;
++import org.openjdk.jmh.annotations.TearDown;
++import org.openjdk.jmh.annotations.Warmup;
++
++/**
++ * Benchmarks collecting all matches of a single filter that matches less than 1/32th of the docs of
++ * a segment and does not need scores, e.g. a term or range filter under an aggregation.
++ *
++ * <ul>
++ *   <li>{@code source} is the data structure that matches are read from: the postings of a term, or
++ *       a doc ID set built from points. {@code cluster} is a term whose 1/64th of matching docs are
++ *       all adjacent.
++ *   <li>{@code gap} is the average number of docs between two consecutive matches, i.e. the query
++ *       matches one doc out of {@code gap}.
++ *   <li>The three benchmark methods differ by what the collector does: a cheap computation per doc,
++ *       reading a doc value per doc, or only counting matches in bulk through {@link
++ *       DocIdStream#count()}.
++ * </ul>
++ */
++@State(Scope.Thread)
++@BenchmarkMode(Mode.AverageTime)
++@OutputTimeUnit(TimeUnit.MICROSECONDS)
++@Warmup(iterations = 3, time = 1)
++@Measurement(iterations = 5, time = 1)
++@Fork(
++    value = 3,
++    jvmArgsAppend = {"-Xmx2g", "-Xms2g", "-XX:+AlwaysPreTouch"})
++public class SparseFilterBulkScorerBenchmark {
++
++  private static final int NUM_DOCS = 4_000_000;
++  private static final int[] GAPS = {100_000, 10_000, 1_000, 256, 100, 50};
++  private static final int POINT_RANGE = 100_000;
++
++  @Param({"postings", "points", "cluster"})
++  String source;
++
++  @Param({"100000", "10000", "1000", "256", "100", "50"})
++  int gap;
++
++  /** Percentage of deleted docs. */
++  @Param({"0"})
++  int deletedPercent;
++
++  private Directory dir;
++  private IndexReader reader;
++  private IndexSearcher searcher;
++  private Path path;
++  private boolean deleteIndexOnTearDown;
++  private Query query;
++  private long checksum;
++
++  @Setup(Level.Trial)
++  public void setup() throws IOException {
++    path = indexPath("sparseFilter-" + deletedPercent);
++    dir = MMapDirectory.open(path);
++    if (isComplete(path) == false) {
++      Random random = new Random(42);
++      try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig().setRAMBufferSizeMB(256))) {
++        for (int i = 0; i < NUM_DOCS; i++) {
++          Document doc = new Document();
++          for (int gap : GAPS) {
++            if (random.nextInt(gap) == 0) {
++              doc.add(new StringField("gap" + gap, "x", Store.NO));
++            }
++          }
++          if (i >= NUM_DOCS / 2 && i < NUM_DOCS / 2 + NUM_DOCS / 64) {
++            doc.add(new StringField("cluster", "x", Store.NO));
++          }
++          if (random.nextInt(100) < deletedPercent) {
++            doc.add(new StringField("deleted", "x", Store.NO));
++          }
++          doc.add(new IntPoint("point", random.nextInt(POINT_RANGE)));
++          doc.add(new NumericDocValuesField("value", random.nextInt(1000)));
++          w.addDocument(doc);
++        }
++        w.forceMerge(1);
++      }
++      if (deletedPercent > 0) {
++        try (IndexWriter w =
++            new IndexWriter(dir, new IndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
++          w.deleteDocuments(new Term("deleted", "x"));
++        }
++      }
++      markComplete(path);
++    }
++    reader = DirectoryReader.open(dir);
++    if (reader.leaves().size() != 1
++        || reader.leaves().get(0).reader().hasDeletions() != (deletedPercent > 0)) {
++      throw new AssertionError("Expected a single segment with " + deletedPercent + "% deletes");
++    }
++    searcher = new IndexSearcher(reader);
++    searcher.setQueryCache(null);
++    Query filter =
++        switch (source) {
++          case "postings" -> new TermQuery(new Term("gap" + gap, "x"));
++          case "points" -> IntPoint.newRangeQuery("point", 0, POINT_RANGE / gap - 1);
++          case "cluster" -> new TermQuery(new Term("cluster", "x"));
++          default -> throw new AssertionError(source);
++        };
++    query = new BooleanQuery.Builder().add(filter, Occur.FILTER).build();
++
++    // Make sure that we are benchmarking the bulk scorer that we think we are benchmarking.
++    LeafReaderContext leaf = reader.leaves().get(0);
++    String bulkScorer =
++        searcher
++            .createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1f)
++            .bulkScorer(leaf)
++            .getClass()
++            .getSimpleName();
++    if (bulkScorer.equals("ConstantScoreBulkScorer") == false) {
++      throw new AssertionError("Expected ConstantScoreBulkScorer, got " + bulkScorer);
++    }
++  }
++
++  @TearDown(Level.Trial)
++  @SuppressForbidden(
++      reason = "prints the checksum so that runs of different builds can be compared")
++  public void tearDown() throws IOException {
++    System.out.println(
++        "checksum(source="
++            + source
++            + ",gap="
++            + gap
++            + ",deletedPercent="
++            + deletedPercent
++            + ")="
++            + checksum);
++    reader.close();
++    dir.close();
++    deleteIndexIfTemporary();
++  }
++
++  /**
++   * Returns the directory of the index for the given parameters and whether it needs to be built.
++   * If the {@code bench.index.dir} system property is set, indexes are kept there and reused by
++   * later runs, so that different builds of Lucene can be compared on the very same index.
++   */
++  private Path indexPath(String name) throws IOException {
++    String base = System.getProperty("bench.index.dir");
++    if (base == null) {
++      deleteIndexOnTearDown = true;
++      return Files.createTempDirectory(name);
++    }
++    deleteIndexOnTearDown = false;
++    return Files.createDirectories(Path.of(base, name));
++  }
++
++  private static boolean isComplete(Path path) {
++    return Files.exists(path.resolve("complete"));
++  }
++
++  private static void markComplete(Path path) throws IOException {
++    Files.createFile(path.resolve("complete"));
++  }
++
++  private void deleteIndexIfTemporary() throws IOException {
++    if (deleteIndexOnTearDown) {
++      IOUtils.rm(path);
++    }
++  }
++
++  private abstract static class SimpleCollector implements Collector {
++    @Override
++    public ScoreMode scoreMode() {
++      return ScoreMode.COMPLETE_NO_SCORES;
++    }
++  }
++
++  /** The collector does a cheap computation on every doc, in doc ID order. */
++  @Benchmark
++  public long collectDocIds() throws IOException {
++    long[] sum = new long[1];
++    searcher.search(
++        query,
++        new SimpleCollector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) {
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) {
++                sum[0] = sum[0] * 31 + doc;
++              }
++            };
++          }
++        });
++    return checksum = sum[0];
++  }
++
++  /** The collector reads a doc value for every doc, like a sum aggregation would do. */
++  @Benchmark
++  public long collectDocValues() throws IOException {
++    long[] sum = new long[1];
++    searcher.search(
++        query,
++        new SimpleCollector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
++            NumericDocValues values = context.reader().getNumericDocValues("value");
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) throws IOException {
++                if (values.advanceExact(doc)) {
++                  sum[0] += values.longValue();
++                }
++              }
++            };
++          }
++        });
++    return checksum = sum[0];
++  }
++
++  /** The collector only counts matches, in bulk whenever it is given the opportunity. */
++  @Benchmark
++  public long count() throws IOException {
++    long[] count = new long[1];
++    searcher.search(
++        query,
++        new SimpleCollector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) {
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) {
++                count[0]++;
++              }
++
++              @Override
++              public void collect(DocIdStream stream) throws IOException {
++                count[0] += stream.count();
++              }
++            };
++          }
++        });
++    return checksum = count[0];
++  }
++}
+diff --git a/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparsePointRangeQueryBenchmark.java b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparsePointRangeQueryBenchmark.java
+new file mode 100644
+index 000000000..e25d8ddff
+--- /dev/null
++++ b/lucene/benchmark-jmh/src/java/org/apache/lucene/benchmark/jmh/SparsePointRangeQueryBenchmark.java
+@@ -0,0 +1,213 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.lucene.benchmark.jmh;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Random;
++import java.util.concurrent.TimeUnit;
++import org.apache.lucene.document.Document;
++import org.apache.lucene.document.LongPoint;
++import org.apache.lucene.index.DirectoryReader;
++import org.apache.lucene.index.IndexReader;
++import org.apache.lucene.index.IndexWriter;
++import org.apache.lucene.index.IndexWriterConfig;
++import org.apache.lucene.index.LeafReaderContext;
++import org.apache.lucene.search.Collector;
++import org.apache.lucene.search.IndexSearcher;
++import org.apache.lucene.search.LeafCollector;
++import org.apache.lucene.search.Query;
++import org.apache.lucene.search.Scorable;
++import org.apache.lucene.search.ScoreMode;
++import org.apache.lucene.store.Directory;
++import org.apache.lucene.store.MMapDirectory;
++import org.apache.lucene.util.IOUtils;
++import org.apache.lucene.util.SuppressForbidden;
++import org.openjdk.jmh.annotations.Benchmark;
++import org.openjdk.jmh.annotations.BenchmarkMode;
++import org.openjdk.jmh.annotations.Fork;
++import org.openjdk.jmh.annotations.Level;
++import org.openjdk.jmh.annotations.Measurement;
++import org.openjdk.jmh.annotations.Mode;
++import org.openjdk.jmh.annotations.OutputTimeUnit;
++import org.openjdk.jmh.annotations.Param;
++import org.openjdk.jmh.annotations.Scope;
++import org.openjdk.jmh.annotations.Setup;
++import org.openjdk.jmh.annotations.State;
++import org.openjdk.jmh.annotations.TearDown;
++import org.openjdk.jmh.annotations.Warmup;
++
++/**
++ * Benchmarks selective point range queries, i.e. queries that match less than 1/128th of the docs
++ * of a segment, so that {@code DocIdSetBuilder} collects matches into an int[] that it needs to
++ * sort rather than into a bit set.
++ *
++ * <p>Two fields are indexed. {@code timestamp} increases with the doc ID, with some jitter, like
++ * events that get indexed in the approximate order in which they occurred: docs that match a range
++ * are clustered in a small range of doc IDs. {@code random} is not correlated with doc IDs: docs
++ * that match a range are scattered across the whole segment.
++ */
++@State(Scope.Thread)
++@BenchmarkMode(Mode.AverageTime)
++@OutputTimeUnit(TimeUnit.MICROSECONDS)
++@Warmup(iterations = 3, time = 1)
++@Measurement(iterations = 5, time = 1)
++@Fork(
++    value = 3,
++    jvmArgsAppend = {"-Xmx2g", "-Xms2g", "-XX:+AlwaysPreTouch"})
++public class SparsePointRangeQueryBenchmark {
++
++  /** Each doc's timestamp is within JITTER of its doc ID. */
++  private static final int JITTER = 100;
++
++  @Param({"1000000", "20000000"})
++  int maxDoc;
++
++  /** Number of docs that match the query. */
++  @Param({"100", "3000"})
++  int numHits;
++
++  @Param({"timestamp", "random"})
++  String field;
++
++  private Directory dir;
++  private IndexReader reader;
++  private IndexSearcher searcher;
++  private Path path;
++  private boolean deleteIndexOnTearDown;
++  private Query query;
++  private long checksum;
++
++  @Setup(Level.Trial)
++  public void setup() throws IOException {
++    path = indexPath("sparsePointRange-" + maxDoc);
++    dir = MMapDirectory.open(path);
++    Random random = new Random(42);
++    if (isComplete(path) == false) {
++      try (IndexWriter w = new IndexWriter(dir, new IndexWriterConfig().setRAMBufferSizeMB(256))) {
++        Document doc = new Document();
++        LongPoint timestamp = new LongPoint("timestamp", 0L);
++        LongPoint rnd = new LongPoint("random", 0L);
++        doc.add(timestamp);
++        doc.add(rnd);
++        for (int i = 0; i < maxDoc; i++) {
++          timestamp.setLongValue(i + random.nextInt(JITTER));
++          rnd.setLongValue(random.nextInt(maxDoc));
++          w.addDocument(doc);
++        }
++        w.forceMerge(1);
++      }
++      markComplete(path);
++    }
++    reader = DirectoryReader.open(dir);
++    if (reader.leaves().size() != 1) {
++      throw new AssertionError("Expected a single segment");
++    }
++    if (numHits >= maxDoc >>> 7) {
++      throw new AssertionError("The query must be selective enough to not use a bit set");
++    }
++    searcher = new IndexSearcher(reader);
++    searcher.setQueryCache(null);
++    long min = maxDoc / 2;
++    // both fields have about one doc per value
++    query = LongPoint.newRangeQuery(field, min, min + numHits - 1);
++
++    // Make sure that matches are collected into a sorted int[] rather than into a bit set.
++    String iterator =
++        searcher
++            .createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1f)
++            .scorer(reader.leaves().get(0))
++            .iterator()
++            .getClass()
++            .getName();
++    if (iterator.contains("IntArrayDocIdSet") == false) {
++      throw new AssertionError("Expected an iterator over a sorted int[], got " + iterator);
++    }
++  }
++
++  @TearDown(Level.Trial)
++  @SuppressForbidden(
++      reason = "prints the checksum so that runs of different builds can be compared")
++  public void tearDown() throws IOException {
++    System.out.println(
++        "checksum(maxDoc=" + maxDoc + ",numHits=" + numHits + ",field=" + field + ")=" + checksum);
++    reader.close();
++    dir.close();
++    deleteIndexIfTemporary();
++  }
++
++  /**
++   * Returns the directory of the index for the given parameters and whether it needs to be built.
++   * If the {@code bench.index.dir} system property is set, indexes are kept there and reused by
++   * later runs, so that different builds of Lucene can be compared on the very same index.
++   */
++  private Path indexPath(String name) throws IOException {
++    String base = System.getProperty("bench.index.dir");
++    if (base == null) {
++      deleteIndexOnTearDown = true;
++      return Files.createTempDirectory(name);
++    }
++    deleteIndexOnTearDown = false;
++    return Files.createDirectories(Path.of(base, name));
++  }
++
++  private static boolean isComplete(Path path) {
++    return Files.exists(path.resolve("complete"));
++  }
++
++  private static void markComplete(Path path) throws IOException {
++    Files.createFile(path.resolve("complete"));
++  }
++
++  private void deleteIndexIfTemporary() throws IOException {
++    if (deleteIndexOnTearDown) {
++      IOUtils.rm(path);
++    }
++  }
++
++  /**
++   * Collect all matches of the range query. The collector computes a checksum that depends on the
++   * number of hits, their doc IDs and the order in which they are collected.
++   */
++  @Benchmark
++  public long search() throws IOException {
++    long[] sum = new long[1];
++    searcher.search(
++        query,
++        new Collector() {
++          @Override
++          public LeafCollector getLeafCollector(LeafReaderContext context) {
++            return new LeafCollector() {
++              @Override
++              public void setScorer(Scorable scorer) {}
++
++              @Override
++              public void collect(int doc) {
++                sum[0] = sum[0] * 31 + doc;
++              }
++            };
++          }
++
++          @Override
++          public ScoreMode scoreMode() {
++            return ScoreMode.COMPLETE_NO_SCORES;
++          }
++        });
++    return checksum = sum[0];
++  }
++}
+-- 
+2.43.0
+

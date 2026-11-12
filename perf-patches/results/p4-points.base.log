@@ -1,0 +1,859 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocIds
+# Parameters: (deletedPercent = 0, gap = 10000, source = points)
+
+# Run progress: 0.00% complete, ETA 00:03:36
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:34:27 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+49.024 us/op
+# Warmup Iteration   2: 43.963 us/op
+# Warmup Iteration   3: 45.146 us/op
+Iteration   1: 41.265 us/op
+Iteration   2: 40.961 us/op
+Iteration   3: 42.995 us/op
+Iteration   4: 42.062 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=8971669388874571054
+42.912 us/op
+
+# Run progress: 3.70% complete, ETA 00:03:43
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:34:36 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+51.897 us/op
+# Warmup Iteration   2: 43.319 us/op
+# Warmup Iteration   3: 43.132 us/op
+Iteration   1: 45.575 us/op
+Iteration   2: 43.876 us/op
+Iteration   3: 45.828 us/op
+Iteration   4: 41.286 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=8971669388874571054
+41.748 us/op
+
+# Run progress: 7.41% complete, ETA 00:03:35
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:34:45 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+51.012 us/op
+# Warmup Iteration   2: 43.651 us/op
+# Warmup Iteration   3: 45.322 us/op
+Iteration   1: 45.223 us/op
+Iteration   2: 44.834 us/op
+Iteration   3: 41.728 us/op
+Iteration   4: 39.366 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=8971669388874571054
+34.127 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocIds":
+  42.252 ±(99.9%) 3.148 us/op [Average]
+  (min, avg, max) = (34.127, 42.252, 45.828), stdev = 2.945
+  CI (99.9%): [39.104, 45.401] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocIds
+# Parameters: (deletedPercent = 0, gap = 1000, source = points)
+
+# Run progress: 11.11% complete, ETA 00:03:27
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:34:53 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+215.078 us/op
+# Warmup Iteration   2: 179.933 us/op
+# Warmup Iteration   3: 175.948 us/op
+Iteration   1: 178.819 us/op
+Iteration   2: 165.558 us/op
+Iteration   3: 176.661 us/op
+Iteration   4: 179.752 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=1061947254507498088
+180.446 us/op
+
+# Run progress: 14.81% complete, ETA 00:03:18
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:35:02 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+209.460 us/op
+# Warmup Iteration   2: 174.065 us/op
+# Warmup Iteration   3: 179.235 us/op
+Iteration   1: 176.201 us/op
+Iteration   2: 182.265 us/op
+Iteration   3: 166.338 us/op
+Iteration   4: 174.825 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=1061947254507498088
+178.297 us/op
+
+# Run progress: 18.52% complete, ETA 00:03:09
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:35:10 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+190.395 us/op
+# Warmup Iteration   2: 159.181 us/op
+# Warmup Iteration   3: 156.197 us/op
+Iteration   1: 156.970 us/op
+Iteration   2: 151.567 us/op
+Iteration   3: 155.387 us/op
+Iteration   4: 149.808 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=1061947254507498088
+151.541 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocIds":
+  168.296 ±(99.9%) 12.995 us/op [Average]
+  (min, avg, max) = (149.808, 168.296, 182.265), stdev = 12.155
+  CI (99.9%): [155.301, 181.290] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocIds
+# Parameters: (deletedPercent = 0, gap = 100, source = points)
+
+# Run progress: 22.22% complete, ETA 00:03:00
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:35:19 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+791.628 us/op
+# Warmup Iteration   2: 693.907 us/op
+# Warmup Iteration   3: 737.548 us/op
+Iteration   1: 674.869 us/op
+Iteration   2: 679.216 us/op
+Iteration   3: 653.681 us/op
+Iteration   4: 678.698 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=4755850706325816153
+586.866 us/op
+
+# Run progress: 25.93% complete, ETA 00:02:52
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:35:28 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+769.815 us/op
+# Warmup Iteration   2: 723.494 us/op
+# Warmup Iteration   3: 733.254 us/op
+Iteration   1: 704.652 us/op
+Iteration   2: 763.589 us/op
+Iteration   3: 761.003 us/op
+Iteration   4: 662.898 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=4755850706325816153
+697.634 us/op
+
+# Run progress: 29.63% complete, ETA 00:02:43
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:35:36 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+909.576 us/op
+# Warmup Iteration   2: 754.009 us/op
+# Warmup Iteration   3: 694.485 us/op
+Iteration   1: 693.174 us/op
+Iteration   2: 724.407 us/op
+Iteration   3: 738.063 us/op
+Iteration   4: 717.613 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=4755850706325816153
+712.044 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocIds":
+  696.560 ±(99.9%) 47.810 us/op [Average]
+  (min, avg, max) = (586.866, 696.560, 763.589), stdev = 44.721
+  CI (99.9%): [648.751, 744.370] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocValues
+# Parameters: (deletedPercent = 0, gap = 10000, source = points)
+
+# Run progress: 33.33% complete, ETA 00:02:34
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:35:45 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+58.171 us/op
+# Warmup Iteration   2: 48.734 us/op
+# Warmup Iteration   3: 48.833 us/op
+Iteration   1: 46.542 us/op
+Iteration   2: 46.697 us/op
+Iteration   3: 44.692 us/op
+Iteration   4: 50.318 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=229711
+43.733 us/op
+
+# Run progress: 37.04% complete, ETA 00:02:26
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:35:54 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+56.904 us/op
+# Warmup Iteration   2: 51.140 us/op
+# Warmup Iteration   3: 49.143 us/op
+Iteration   1: 41.427 us/op
+Iteration   2: 47.735 us/op
+Iteration   3: 48.327 us/op
+Iteration   4: 45.857 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=229711
+51.982 us/op
+
+# Run progress: 40.74% complete, ETA 00:02:17
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:36:02 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+63.011 us/op
+# Warmup Iteration   2: 50.868 us/op
+# Warmup Iteration   3: 49.394 us/op
+Iteration   1: 43.386 us/op
+Iteration   2: 46.074 us/op
+Iteration   3: 43.942 us/op
+Iteration   4: 42.787 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=229711
+39.037 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocValues":
+  45.503 ±(99.9%) 3.587 us/op [Average]
+  (min, avg, max) = (39.037, 45.503, 51.982), stdev = 3.355
+  CI (99.9%): [41.916, 49.089] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocValues
+# Parameters: (deletedPercent = 0, gap = 1000, source = points)
+
+# Run progress: 44.44% complete, ETA 00:02:09
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:36:11 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+254.379 us/op
+# Warmup Iteration   2: 202.173 us/op
+# Warmup Iteration   3: 191.774 us/op
+Iteration   1: 188.982 us/op
+Iteration   2: 209.354 us/op
+Iteration   3: 195.825 us/op
+Iteration   4: 182.420 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=2091840
+189.046 us/op
+
+# Run progress: 48.15% complete, ETA 00:02:00
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:36:19 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+286.249 us/op
+# Warmup Iteration   2: 205.466 us/op
+# Warmup Iteration   3: 193.162 us/op
+Iteration   1: 192.874 us/op
+Iteration   2: 202.591 us/op
+Iteration   3: 194.118 us/op
+Iteration   4: 198.166 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=2091840
+191.758 us/op
+
+# Run progress: 51.85% complete, ETA 00:01:51
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:36:28 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+224.714 us/op
+# Warmup Iteration   2: 194.596 us/op
+# Warmup Iteration   3: 204.353 us/op
+Iteration   1: 197.420 us/op
+Iteration   2: 186.136 us/op
+Iteration   3: 210.211 us/op
+Iteration   4: 194.400 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=2091840
+219.467 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocValues":
+  196.851 ±(99.9%) 10.627 us/op [Average]
+  (min, avg, max) = (182.420, 196.851, 219.467), stdev = 9.941
+  CI (99.9%): [186.224, 207.479] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocValues
+# Parameters: (deletedPercent = 0, gap = 100, source = points)
+
+# Run progress: 55.56% complete, ETA 00:01:43
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:36:37 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+1325.101 us/op
+# Warmup Iteration   2: 1123.060 us/op
+# Warmup Iteration   3: 1113.583 us/op
+Iteration   1: 1089.802 us/op
+Iteration   2: 1084.833 us/op
+Iteration   3: 1138.631 us/op
+Iteration   4: 1082.660 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=20096037
+1110.419 us/op
+
+# Run progress: 59.26% complete, ETA 00:01:34
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:36:45 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+1318.043 us/op
+# Warmup Iteration   2: 1186.965 us/op
+# Warmup Iteration   3: 1128.022 us/op
+Iteration   1: 1119.134 us/op
+Iteration   2: 1122.969 us/op
+Iteration   3: 1153.594 us/op
+Iteration   4: 1110.330 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=20096037
+1114.293 us/op
+
+# Run progress: 62.96% complete, ETA 00:01:26
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:36:54 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+1229.349 us/op
+# Warmup Iteration   2: 1178.427 us/op
+# Warmup Iteration   3: 1184.887 us/op
+Iteration   1: 1141.339 us/op
+Iteration   2: 1149.611 us/op
+Iteration   3: 1115.687 us/op
+Iteration   4: 1037.786 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=20096037
+1071.175 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocValues":
+  1109.484 ±(99.9%) 33.904 us/op [Average]
+  (min, avg, max) = (1037.786, 1109.484, 1153.594), stdev = 31.714
+  CI (99.9%): [1075.580, 1143.388] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.count
+# Parameters: (deletedPercent = 0, gap = 10000, source = points)
+
+# Run progress: 66.67% complete, ETA 00:01:17
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:37:03 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+18.930 us/op
+# Warmup Iteration   2: 17.950 us/op
+# Warmup Iteration   3: 19.385 us/op
+Iteration   1: 18.060 us/op
+Iteration   2: 17.178 us/op
+Iteration   3: 17.029 us/op
+Iteration   4: 16.997 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=444
+16.719 us/op
+
+# Run progress: 70.37% complete, ETA 00:01:08
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:37:11 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+24.433 us/op
+# Warmup Iteration   2: 18.348 us/op
+# Warmup Iteration   3: 17.066 us/op
+Iteration   1: 18.270 us/op
+Iteration   2: 17.469 us/op
+Iteration   3: 18.179 us/op
+Iteration   4: 15.667 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=444
+16.974 us/op
+
+# Run progress: 74.07% complete, ETA 00:01:00
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:37:20 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+21.697 us/op
+# Warmup Iteration   2: 19.106 us/op
+# Warmup Iteration   3: 18.756 us/op
+Iteration   1: 17.295 us/op
+Iteration   2: 17.080 us/op
+Iteration   3: 17.072 us/op
+Iteration   4: 16.613 us/op
+Iteration   5: checksum(source=points,gap=10000,deletedPercent=0)=444
+17.479 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.count":
+  17.205 ±(99.9%) 0.705 us/op [Average]
+  (min, avg, max) = (15.667, 17.205, 18.270), stdev = 0.659
+  CI (99.9%): [16.501, 17.910] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.count
+# Parameters: (deletedPercent = 0, gap = 1000, source = points)
+
+# Run progress: 77.78% complete, ETA 00:00:51
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:37:28 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+90.174 us/op
+# Warmup Iteration   2: 70.508 us/op
+# Warmup Iteration   3: 69.246 us/op
+Iteration   1: 69.046 us/op
+Iteration   2: 66.737 us/op
+Iteration   3: 67.923 us/op
+Iteration   4: 63.850 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=4209
+61.760 us/op
+
+# Run progress: 81.48% complete, ETA 00:00:43
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:37:37 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+91.427 us/op
+# Warmup Iteration   2: 70.241 us/op
+# Warmup Iteration   3: 70.510 us/op
+Iteration   1: 67.764 us/op
+Iteration   2: 76.239 us/op
+Iteration   3: 74.256 us/op
+Iteration   4: 73.621 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=4209
+70.740 us/op
+
+# Run progress: 85.19% complete, ETA 00:00:34
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:37:46 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+86.461 us/op
+# Warmup Iteration   2: 82.474 us/op
+# Warmup Iteration   3: 70.820 us/op
+Iteration   1: 73.497 us/op
+Iteration   2: 74.621 us/op
+Iteration   3: 67.457 us/op
+Iteration   4: 66.127 us/op
+Iteration   5: checksum(source=points,gap=1000,deletedPercent=0)=4209
+71.578 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.count":
+  69.681 ±(99.9%) 4.547 us/op [Average]
+  (min, avg, max) = (61.760, 69.681, 76.239), stdev = 4.254
+  CI (99.9%): [65.134, 74.228] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.count
+# Parameters: (deletedPercent = 0, gap = 100, source = points)
+
+# Run progress: 88.89% complete, ETA 00:00:25
+# Fork: 1 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:37:54 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+302.205 us/op
+# Warmup Iteration   2: 245.389 us/op
+# Warmup Iteration   3: 227.465 us/op
+Iteration   1: 220.872 us/op
+Iteration   2: 207.204 us/op
+Iteration   3: 218.555 us/op
+Iteration   4: 219.351 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=40284
+230.328 us/op
+
+# Run progress: 92.59% complete, ETA 00:00:17
+# Fork: 2 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:38:03 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+341.457 us/op
+# Warmup Iteration   2: 232.862 us/op
+# Warmup Iteration   3: 243.125 us/op
+Iteration   1: 225.925 us/op
+Iteration   2: 231.411 us/op
+Iteration   3: 240.389 us/op
+Iteration   4: 239.099 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=40284
+203.556 us/op
+
+# Run progress: 96.30% complete, ETA 00:00:08
+# Fork: 3 of 3
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:38:11 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+312.667 us/op
+# Warmup Iteration   2: 253.390 us/op
+# Warmup Iteration   3: 229.451 us/op
+Iteration   1: 218.976 us/op
+Iteration   2: 225.900 us/op
+Iteration   3: 202.396 us/op
+Iteration   4: 207.943 us/op
+Iteration   5: checksum(source=points,gap=100,deletedPercent=0)=40284
+200.105 us/op
+
+
+Result "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.count":
+  219.467 ±(99.9%) 13.917 us/op [Average]
+  (min, avg, max) = (200.105, 219.467, 240.389), stdev = 13.018
+  CI (99.9%): [205.550, 233.384] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:03:52
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                         (deletedPercent)  (gap)  (source)  Mode  Cnt     Score    Error  Units
+SparseFilterBulkScorerBenchmark.collectDocIds                    0  10000    points  avgt   15    42.252 ±  3.148  us/op
+SparseFilterBulkScorerBenchmark.collectDocIds                    0   1000    points  avgt   15   168.296 ± 12.995  us/op
+SparseFilterBulkScorerBenchmark.collectDocIds                    0    100    points  avgt   15   696.560 ± 47.810  us/op
+SparseFilterBulkScorerBenchmark.collectDocValues                 0  10000    points  avgt   15    45.503 ±  3.587  us/op
+SparseFilterBulkScorerBenchmark.collectDocValues                 0   1000    points  avgt   15   196.851 ± 10.627  us/op
+SparseFilterBulkScorerBenchmark.collectDocValues                 0    100    points  avgt   15  1109.484 ± 33.904  us/op
+SparseFilterBulkScorerBenchmark.count                            0  10000    points  avgt   15    17.205 ±  0.705  us/op
+SparseFilterBulkScorerBenchmark.count                            0   1000    points  avgt   15    69.681 ±  4.547  us/op
+SparseFilterBulkScorerBenchmark.count                            0    100    points  avgt   15   219.467 ± 13.917  us/op
+
+Benchmark result is saved to /home/user/lucene-bench/results/p4-points.base.json

@@ -1,0 +1,410 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 8 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet
+# Parameters: (density = 0.1, maxDoc = 1000000, withDeletions = false)
+
+# Run progress: 0.00% complete, ETA 00:02:56
+# Fork: 1 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 35.690 ops/ms
+# Warmup Iteration   2: 40.634 ops/ms
+# Warmup Iteration   3: 37.282 ops/ms
+Iteration   1: 36.483 ops/ms
+Iteration   2: 44.409 ops/ms
+Iteration   3: 49.435 ops/ms
+Iteration   4: 39.669 ops/ms
+Iteration   5: 38.291 ops/ms
+Iteration   6: 39.978 ops/ms
+Iteration   7: 37.740 ops/ms
+Iteration   8: 42.489 ops/ms
+
+# Run progress: 6.25% complete, ETA 00:02:50
+# Fork: 2 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 50.421 ops/ms
+# Warmup Iteration   2: 39.170 ops/ms
+# Warmup Iteration   3: 36.132 ops/ms
+Iteration   1: 35.719 ops/ms
+Iteration   2: 40.558 ops/ms
+Iteration   3: 35.213 ops/ms
+Iteration   4: 48.176 ops/ms
+Iteration   5: 40.952 ops/ms
+Iteration   6: 39.123 ops/ms
+Iteration   7: 40.277 ops/ms
+Iteration   8: 41.577 ops/ms
+
+# Run progress: 12.50% complete, ETA 00:02:38
+# Fork: 3 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 38.422 ops/ms
+# Warmup Iteration   2: 37.058 ops/ms
+# Warmup Iteration   3: 33.608 ops/ms
+Iteration   1: 36.741 ops/ms
+Iteration   2: 34.208 ops/ms
+Iteration   3: 36.361 ops/ms
+Iteration   4: 35.751 ops/ms
+Iteration   5: 41.107 ops/ms
+Iteration   6: 41.772 ops/ms
+Iteration   7: 36.976 ops/ms
+Iteration   8: 41.314 ops/ms
+
+# Run progress: 18.75% complete, ETA 00:02:27
+# Fork: 4 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 31.191 ops/ms
+# Warmup Iteration   2: 38.292 ops/ms
+# Warmup Iteration   3: 45.504 ops/ms
+Iteration   1: 32.891 ops/ms
+Iteration   2: 40.627 ops/ms
+Iteration   3: 42.214 ops/ms
+Iteration   4: 49.603 ops/ms
+Iteration   5: 41.010 ops/ms
+Iteration   6: 35.063 ops/ms
+Iteration   7: 48.940 ops/ms
+Iteration   8: 37.077 ops/ms
+
+
+Result "org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet":
+  40.054 ±(99.9%) 2.827 ops/ms [Average]
+  (min, avg, max) = (32.891, 40.054, 49.603), stdev = 4.401
+  CI (99.9%): [37.228, 42.881] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 8 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet
+# Parameters: (density = 0.1, maxDoc = 1000000, withDeletions = true)
+
+# Run progress: 25.00% complete, ETA 00:02:16
+# Fork: 1 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 24.944 ops/ms
+# Warmup Iteration   2: 24.341 ops/ms
+# Warmup Iteration   3: 29.969 ops/ms
+Iteration   1: 24.237 ops/ms
+Iteration   2: 27.079 ops/ms
+Iteration   3: 29.278 ops/ms
+Iteration   4: 32.433 ops/ms
+Iteration   5: 26.807 ops/ms
+Iteration   6: 27.488 ops/ms
+Iteration   7: 29.504 ops/ms
+Iteration   8: 27.136 ops/ms
+
+# Run progress: 31.25% complete, ETA 00:02:04
+# Fork: 2 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 22.174 ops/ms
+# Warmup Iteration   2: 26.855 ops/ms
+# Warmup Iteration   3: 26.088 ops/ms
+Iteration   1: 26.649 ops/ms
+Iteration   2: 29.460 ops/ms
+Iteration   3: 26.580 ops/ms
+Iteration   4: 27.049 ops/ms
+Iteration   5: 26.778 ops/ms
+Iteration   6: 25.462 ops/ms
+Iteration   7: 29.477 ops/ms
+Iteration   8: 27.161 ops/ms
+
+# Run progress: 37.50% complete, ETA 00:01:53
+# Fork: 3 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 24.361 ops/ms
+# Warmup Iteration   2: 28.518 ops/ms
+# Warmup Iteration   3: 27.577 ops/ms
+Iteration   1: 22.952 ops/ms
+Iteration   2: 26.042 ops/ms
+Iteration   3: 25.799 ops/ms
+Iteration   4: 28.105 ops/ms
+Iteration   5: 29.011 ops/ms
+Iteration   6: 29.971 ops/ms
+Iteration   7: 27.758 ops/ms
+Iteration   8: 28.583 ops/ms
+
+# Run progress: 43.75% complete, ETA 00:01:42
+# Fork: 4 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 27.674 ops/ms
+# Warmup Iteration   2: 29.719 ops/ms
+# Warmup Iteration   3: 25.591 ops/ms
+Iteration   1: 29.933 ops/ms
+Iteration   2: 28.369 ops/ms
+Iteration   3: 26.723 ops/ms
+Iteration   4: 28.551 ops/ms
+Iteration   5: 26.760 ops/ms
+Iteration   6: 21.985 ops/ms
+Iteration   7: 24.331 ops/ms
+Iteration   8: 29.736 ops/ms
+
+
+Result "org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet":
+  27.412 ±(99.9%) 1.399 ops/ms [Average]
+  (min, avg, max) = (21.985, 27.412, 32.433), stdev = 2.178
+  CI (99.9%): [26.013, 28.811] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 8 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet
+# Parameters: (density = 0.5, maxDoc = 1000000, withDeletions = false)
+
+# Run progress: 50.00% complete, ETA 00:01:30
+# Fork: 1 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 36.827 ops/ms
+# Warmup Iteration   2: 41.703 ops/ms
+# Warmup Iteration   3: 44.325 ops/ms
+Iteration   1: 37.692 ops/ms
+Iteration   2: 43.341 ops/ms
+Iteration   3: 44.789 ops/ms
+Iteration   4: 42.975 ops/ms
+Iteration   5: 44.468 ops/ms
+Iteration   6: 42.289 ops/ms
+Iteration   7: 43.452 ops/ms
+Iteration   8: 48.563 ops/ms
+
+# Run progress: 56.25% complete, ETA 00:01:19
+# Fork: 2 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 45.866 ops/ms
+# Warmup Iteration   2: 43.079 ops/ms
+# Warmup Iteration   3: 45.107 ops/ms
+Iteration   1: 44.458 ops/ms
+Iteration   2: 40.966 ops/ms
+Iteration   3: 32.815 ops/ms
+Iteration   4: 37.193 ops/ms
+Iteration   5: 45.314 ops/ms
+Iteration   6: 43.001 ops/ms
+Iteration   7: 47.677 ops/ms
+Iteration   8: 43.628 ops/ms
+
+# Run progress: 62.50% complete, ETA 00:01:08
+# Fork: 3 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 43.312 ops/ms
+# Warmup Iteration   2: 42.000 ops/ms
+# Warmup Iteration   3: 42.482 ops/ms
+Iteration   1: 45.421 ops/ms
+Iteration   2: 46.287 ops/ms
+Iteration   3: 44.821 ops/ms
+Iteration   4: 37.087 ops/ms
+Iteration   5: 44.686 ops/ms
+Iteration   6: 43.431 ops/ms
+Iteration   7: 46.183 ops/ms
+Iteration   8: 38.280 ops/ms
+
+# Run progress: 68.75% complete, ETA 00:00:56
+# Fork: 4 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 39.053 ops/ms
+# Warmup Iteration   2: 44.536 ops/ms
+# Warmup Iteration   3: 39.092 ops/ms
+Iteration   1: 44.510 ops/ms
+Iteration   2: 45.401 ops/ms
+Iteration   3: 35.491 ops/ms
+Iteration   4: 42.731 ops/ms
+Iteration   5: 47.703 ops/ms
+Iteration   6: 49.985 ops/ms
+Iteration   7: 44.896 ops/ms
+Iteration   8: 46.210 ops/ms
+
+
+Result "org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet":
+  43.305 ±(99.9%) 2.510 ops/ms [Average]
+  (min, avg, max) = (32.815, 43.305, 49.985), stdev = 3.908
+  CI (99.9%): [40.795, 45.814] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 8 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet
+# Parameters: (density = 0.5, maxDoc = 1000000, withDeletions = true)
+
+# Run progress: 75.00% complete, ETA 00:00:45
+# Fork: 1 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 30.874 ops/ms
+# Warmup Iteration   2: 36.366 ops/ms
+# Warmup Iteration   3: 36.595 ops/ms
+Iteration   1: 36.087 ops/ms
+Iteration   2: 35.004 ops/ms
+Iteration   3: 31.812 ops/ms
+Iteration   4: 32.252 ops/ms
+Iteration   5: 28.780 ops/ms
+Iteration   6: 21.856 ops/ms
+Iteration   7: 35.929 ops/ms
+Iteration   8: 30.840 ops/ms
+
+# Run progress: 81.25% complete, ETA 00:00:34
+# Fork: 2 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 33.038 ops/ms
+# Warmup Iteration   2: 29.670 ops/ms
+# Warmup Iteration   3: 35.078 ops/ms
+Iteration   1: 30.231 ops/ms
+Iteration   2: 29.039 ops/ms
+Iteration   3: 27.502 ops/ms
+Iteration   4: 32.969 ops/ms
+Iteration   5: 31.931 ops/ms
+Iteration   6: 34.587 ops/ms
+Iteration   7: 25.738 ops/ms
+Iteration   8: 24.849 ops/ms
+
+# Run progress: 87.50% complete, ETA 00:00:22
+# Fork: 3 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 31.617 ops/ms
+# Warmup Iteration   2: 24.435 ops/ms
+# Warmup Iteration   3: 25.539 ops/ms
+Iteration   1: 27.895 ops/ms
+Iteration   2: 34.600 ops/ms
+Iteration   3: 28.835 ops/ms
+Iteration   4: 30.015 ops/ms
+Iteration   5: 31.388 ops/ms
+Iteration   6: 31.216 ops/ms
+Iteration   7: 33.823 ops/ms
+Iteration   8: 23.119 ops/ms
+
+# Run progress: 93.75% complete, ETA 00:00:11
+# Fork: 4 of 4
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: 18.024 ops/ms
+# Warmup Iteration   2: 26.329 ops/ms
+# Warmup Iteration   3: 28.523 ops/ms
+Iteration   1: 25.172 ops/ms
+Iteration   2: 39.704 ops/ms
+Iteration   3: 31.899 ops/ms
+Iteration   4: 32.045 ops/ms
+Iteration   5: 33.744 ops/ms
+Iteration   6: 33.135 ops/ms
+Iteration   7: 38.507 ops/ms
+Iteration   8: 31.776 ops/ms
+
+
+Result "org.apache.lucene.benchmark.jmh.DefaultBulkScorerBenchmark.scoreIntoBitSet":
+  31.134 ±(99.9%) 2.669 ops/ms [Average]
+  (min, avg, max) = (21.856, 31.134, 39.704), stdev = 4.156
+  CI (99.9%): [28.464, 33.803] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:03:01
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                   (density)  (maxDoc)  (withDeletions)   Mode  Cnt   Score   Error   Units
+DefaultBulkScorerBenchmark.scoreIntoBitSet        0.1   1000000            false  thrpt   32  40.054 ± 2.827  ops/ms
+DefaultBulkScorerBenchmark.scoreIntoBitSet        0.1   1000000             true  thrpt   32  27.412 ± 1.399  ops/ms
+DefaultBulkScorerBenchmark.scoreIntoBitSet        0.5   1000000            false  thrpt   32  43.305 ± 2.510  ops/ms
+DefaultBulkScorerBenchmark.scoreIntoBitSet        0.5   1000000             true  thrpt   32  31.134 ± 2.669  ops/ms
+
+Benchmark result is saved to /home/user/lucene-bench/results/p5-existing.base.json

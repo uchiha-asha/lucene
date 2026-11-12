@@ -1,0 +1,215 @@
+From 3767e688cba78a7e862d5b6161f26736b0b7e756 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 12 Nov 2026 12:26:19 +0000
+Subject: [PATCH] Reuse the previous end address when iterating dense
+ multi-valued doc values
+
+The dense SORTED_NUMERIC and SORTED_SET doc values of Lucene90DocValuesProducer read two
+addresses from a DirectMonotonicReader every time they move to a doc: the start and the end
+of the values of this doc. When moving to the doc that immediately follows the current doc,
+which is what nextDoc() and advanceExact() on consecutive matches do, the start address is
+the end address of the previous doc, so only one address needs to be read.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01EozJPtiJsJKEVATGbxEknG
+---
+ .../lucene90/Lucene90DocValuesProducer.java   | 39 +++++---
+ .../lucene90/TestLucene90DocValuesFormat.java | 95 +++++++++++++++++++
+ 2 files changed, 121 insertions(+), 13 deletions(-)
+
+diff --git a/lucene/core/src/java/org/apache/lucene/codecs/lucene90/Lucene90DocValuesProducer.java b/lucene/core/src/java/org/apache/lucene/codecs/lucene90/Lucene90DocValuesProducer.java
+index dd67e555e..f7a7dd696 100644
+--- a/lucene/core/src/java/org/apache/lucene/codecs/lucene90/Lucene90DocValuesProducer.java
++++ b/lucene/core/src/java/org/apache/lucene/codecs/lucene90/Lucene90DocValuesProducer.java
+@@ -2051,19 +2051,25 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
+           if (target >= maxDoc) {
+             return doc = NO_MORE_DOCS;
+           }
+-          start = addresses.get(target);
+-          end = addresses.get(target + 1L);
+-          count = (int) (end - start);
+-          return doc = target;
++          setDoc(target);
++          return target;
+         }
+ 
+         @Override
+         public boolean advanceExact(int target) throws IOException {
+-          start = addresses.get(target);
++          setDoc(target);
++          return true;
++        }
++
++        private void setDoc(int target) {
++          // Addresses are monotonic: the end address of a doc is the start address of the next
++          // one, so moving to the next doc only requires reading one address instead of two.
++          // Note: `end` is only meaningful if the iterator is positioned (doc != -1), and
++          // target == doc + 1 cannot be true when doc is -1 or NO_MORE_DOCS.
++          start = target == doc + 1 && doc != -1 ? end : addresses.get(target);
+           end = addresses.get(target + 1L);
+           count = (int) (end - start);
+           doc = target;
+-          return true;
+         }
+ 
+         @Override
+@@ -2317,6 +2323,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
+           private final int maxDoc = Lucene90DocValuesProducer.this.maxDoc;
+           private int doc = -1;
+           private long curr;
++          private long end;
+           private int count;
+ 
+           @Override
+@@ -2326,11 +2333,19 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
+ 
+           @Override
+           public boolean advanceExact(int target) throws IOException {
+-            curr = addresses.get(target);
+-            long end = addresses.get(target + 1L);
++            setDoc(target);
++            return true;
++          }
++
++          private void setDoc(int target) {
++            // Addresses are monotonic: the end address of a doc is the start address of the next
++            // one, so moving to the next doc only requires reading one address instead of two.
++            // Note: `end` is only meaningful if the iterator is positioned (doc != -1), and
++            // target == doc + 1 cannot be true when doc is -1 or NO_MORE_DOCS.
++            curr = target == doc + 1 && doc != -1 ? end : addresses.get(target);
++            end = addresses.get(target + 1L);
+             count = (int) (end - curr);
+             doc = target;
+-            return true;
+           }
+ 
+           @Override
+@@ -2353,10 +2368,8 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
+             if (target >= maxDoc) {
+               return doc = NO_MORE_DOCS;
+             }
+-            curr = addresses.get(target);
+-            long end = addresses.get(target + 1L);
+-            count = (int) (end - curr);
+-            return doc = target;
++            setDoc(target);
++            return target;
+           }
+ 
+           @Override
+diff --git a/lucene/core/src/test/org/apache/lucene/codecs/lucene90/TestLucene90DocValuesFormat.java b/lucene/core/src/test/org/apache/lucene/codecs/lucene90/TestLucene90DocValuesFormat.java
+index c335b1936..2c8c45074 100644
+--- a/lucene/core/src/test/org/apache/lucene/codecs/lucene90/TestLucene90DocValuesFormat.java
++++ b/lucene/core/src/test/org/apache/lucene/codecs/lucene90/TestLucene90DocValuesFormat.java
+@@ -62,6 +62,7 @@ import org.apache.lucene.index.Term;
+ import org.apache.lucene.index.Terms;
+ import org.apache.lucene.index.TermsEnum;
+ import org.apache.lucene.index.TermsEnum.SeekStatus;
++import org.apache.lucene.search.DocIdSetIterator;
+ import org.apache.lucene.store.ByteBuffersDataInput;
+ import org.apache.lucene.store.ByteBuffersDataOutput;
+ import org.apache.lucene.store.Directory;
+@@ -872,6 +873,100 @@ public class TestLucene90DocValuesFormat extends BaseCompressingDocValuesFormatT
+     }
+   }
+ 
++  /**
++   * Dense multi-valued fields reuse the end address of the previous doc when moving to the next
++   * doc. Check that values are correct regardless of how adjacent and non-adjacent docs are
++   * visited.
++   */
++  public void testDenseMultiValuedRandomAccessPatterns() throws IOException {
++    final int maxDoc = TestUtil.nextInt(random(), 1, 3) * 1000 + random().nextInt(1000);
++    final long[][] expectedNumbers = new long[maxDoc][];
++    final long[][] expectedOrds = new long[maxDoc][];
++    try (Directory dir = newDirectory()) {
++      try (IndexWriter w =
++          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()))) {
++        for (int i = 0; i < maxDoc; ++i) {
++          Document doc = new Document();
++          // every doc has at least one value so that fields are dense, the first doc has two so
++          // that fields are multi-valued
++          int numValues = i == 0 ? 2 : TestUtil.nextInt(random(), 1, 4);
++          expectedNumbers[i] = new long[numValues];
++          TreeSet<Long> ords = new TreeSet<>();
++          for (int j = 0; j < numValues; ++j) {
++            expectedNumbers[i][j] = random().nextInt(1000);
++            doc.add(new SortedNumericDocValuesField("snum", expectedNumbers[i][j]));
++            // terms are zero-padded so that their order is the order of ordinals
++            long ord = j == 0 && i < 100 ? i : random().nextInt(100);
++            ords.add(ord);
++            doc.add(
++                new SortedSetDocValuesField(
++                    "sset", newBytesRef(String.format(java.util.Locale.ROOT, "%03d", ord))));
++          }
++          Arrays.sort(expectedNumbers[i]);
++          expectedOrds[i] = ords.stream().mapToLong(Long::longValue).toArray();
++          w.addDocument(doc);
++        }
++        w.forceMerge(1);
++      }
++      try (DirectoryReader r = DirectoryReader.open(dir)) {
++        LeafReader leaf = getOnlyLeafReader(r);
++        for (int iter = 0; iter < 20; ++iter) {
++          SortedNumericDocValues numbers = leaf.getSortedNumericDocValues("snum");
++          SortedSetDocValues ords = leaf.getSortedSetDocValues("sset");
++          assertNull(DocValues.unwrapSingleton(numbers));
++          assertNull(DocValues.unwrapSingleton(ords));
++          assertEquals(maxDoc, numbers.cost());
++          assertEquals(maxDoc, ords.cost());
++          int doc = -1;
++          while (true) {
++            // move to the next doc most of the time, sometimes skip docs or stay on the same doc
++            int target =
++                switch (random().nextInt(8)) {
++                  case 0 -> doc + TestUtil.nextInt(random(), 2, 10);
++                  case 1 -> Math.max(doc, 0);
++                  default -> doc + 1;
++                };
++            boolean exact = random().nextBoolean() || target == doc;
++            if (target >= maxDoc) {
++              if (exact == false) {
++                assertEquals(DocIdSetIterator.NO_MORE_DOCS, numbers.advance(target));
++                assertEquals(DocIdSetIterator.NO_MORE_DOCS, ords.advance(target));
++              }
++              break;
++            }
++            if (exact) {
++              assertTrue(numbers.advanceExact(target));
++              assertTrue(ords.advanceExact(target));
++            } else if (target == doc + 1 && random().nextBoolean()) {
++              assertEquals(target, numbers.nextDoc());
++              assertEquals(target, ords.nextDoc());
++            } else {
++              assertEquals(target, numbers.advance(target));
++              assertEquals(target, ords.advance(target));
++            }
++            doc = target;
++            assertEquals(doc, numbers.docID());
++            assertEquals(doc, ords.docID());
++            assertEquals(expectedNumbers[doc].length, numbers.docValueCount());
++            assertEquals(expectedOrds[doc].length, ords.docValueCount());
++            // sometimes only consume some of the values, the next doc must not be affected
++            int numToConsume =
++                random().nextInt(4) == 0
++                    ? random().nextInt(expectedNumbers[doc].length + 1)
++                    : expectedNumbers[doc].length;
++            for (int i = 0; i < numToConsume; ++i) {
++              assertEquals(expectedNumbers[doc][i], numbers.nextValue());
++            }
++            numToConsume = Math.min(numToConsume, expectedOrds[doc].length);
++            for (int i = 0; i < numToConsume; ++i) {
++              assertEquals(expectedOrds[doc][i], ords.nextOrd());
++            }
++          }
++        }
++      }
++    }
++  }
++
+   @Nightly
+   public void testSortedNumericBlocksOfVariousBitsPerValue() throws Exception {
+     doTestSortedNumericBlocksOfVariousBitsPerValue(() -> TestUtil.nextInt(random(), 1, 3));
+-- 
+2.43.0
+

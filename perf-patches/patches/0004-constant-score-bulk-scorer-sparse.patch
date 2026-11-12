@@ -1,0 +1,390 @@
+From 02b58eefe0c9327226b22bd83653d4b2c5cc55cc Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 12 Nov 2026 12:26:20 +0000
+Subject: [PATCH] Collect sparse matches one by one in ConstantScoreBulkScorer
+
+ConstantScoreBulkScorer loads windows of 4096 doc IDs into a bit set, which it then
+collects and clears. The cost of this is proportional to the size of the window rather
+than to the number of matches in the window, so it is much more expensive than collecting
+matches one by one when matches are far apart from each other: with a single match per
+window, 64 longs get written, scanned and cleared for every match.
+
+Plain iterators are now collected one by one for as long as fewer than 32 matches fit in
+a window, and the bulk scorer only switches to bit sets where matches are closer to each
+other. Two-phase iterators are not affected.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01EozJPtiJsJKEVATGbxEknG
+---
+ .../search/ConstantScoreBulkScorer.java       |  52 ++++++++
+ .../lucene/search/TestBooleanScorer.java      |  82 ++++++++++--
+ .../search/TestConstantScoreBulkScorer.java   | 123 ++++++++++++++++++
+ 3 files changed, 245 insertions(+), 12 deletions(-)
+
+diff --git a/lucene/core/src/java/org/apache/lucene/search/ConstantScoreBulkScorer.java b/lucene/core/src/java/org/apache/lucene/search/ConstantScoreBulkScorer.java
+index 79c042009..37cfaa4a0 100644
+--- a/lucene/core/src/java/org/apache/lucene/search/ConstantScoreBulkScorer.java
++++ b/lucene/core/src/java/org/apache/lucene/search/ConstantScoreBulkScorer.java
+@@ -24,14 +24,37 @@ import org.apache.lucene.util.MathUtil;
+ /**
+  * Bulk scorer for no-score constant-score iterators that batches doc IDs via {@link
+  * DocIdSetIterator#intoBitSet}.
++ *
++ * <p>Loading a window of doc IDs into a bit set, collecting it and clearing it has a cost that is
++ * proportional to the size of the window rather than to the number of matches in the window. This
++ * only pays off if windows contain enough matches, so iterators are collected one doc at a time for
++ * as long as their matches are too far apart from each other.
+  */
+ final class ConstantScoreBulkScorer extends BulkScorer {
++
++  /**
++   * Minimum number of matches that a window of {@link DenseConjunctionBulkScorer#WINDOW_SIZE} doc
++   * IDs must have for {@link DocIdSetIterator#intoBitSet} to be used.
++   */
++  static final int MIN_WINDOW_MATCHES = DenseConjunctionBulkScorer.WINDOW_SIZE / 128;
++
++  /**
++   * Number of doc IDs between the end of a window and the next match above which we check whether
++   * the window had fewer than {@link #MIN_WINDOW_MATCHES} matches. This is several times the
++   * average gap between matches of a window that has {@link #MIN_WINDOW_MATCHES} matches, so that
++   * windows whose number of matches is slightly above this threshold rarely pay for the check.
++   */
++  private static final int MIN_GAP_FOR_SPARSE_CHECK = DenseConjunctionBulkScorer.WINDOW_SIZE / 8;
++
+   private final Scorer scorer;
+   private final DocIdSetIterator iterator;
+   // When non-null, matches of the approximation must be confirmed via twoPhase#matches() /
+   // twoPhase#intoBitSet rather than taken as-is.
+   private final TwoPhaseIterator twoPhase;
+   private final FixedBitSet windowMatches = new FixedBitSet(DenseConjunctionBulkScorer.WINDOW_SIZE);
++  // Whether matches were too far apart from each other for bit sets to be used last time we
++  // checked. Only used with plain iterators, two-phase iterators always use bit sets.
++  private boolean sparse = true;
+ 
+   ConstantScoreBulkScorer(float score, ScoreMode scoreMode, DocIdSetIterator iterator) {
+     this(score, scoreMode, iterator, null);
+@@ -128,12 +151,41 @@ final class ConstantScoreBulkScorer extends BulkScorer {
+     }
+     for (int doc = iterator.docID(); doc < max; ) {
+       int windowBase = doc;
++
++      if (twoPhase == null && sparse) {
++        // Collect matches one by one, and only start using bit sets if we find enough matches that
++        // are close to each other.
++        final int sparseMax =
++            MathUtil.unsignedMin(max, windowBase + DenseConjunctionBulkScorer.WINDOW_SIZE);
++        int numMatches = 0;
++        do {
++          if (acceptDocs == null || acceptDocs.get(doc)) {
++            collector.collect(doc);
++          }
++          doc = iterator.nextDoc();
++        } while (++numMatches < MIN_WINDOW_MATCHES && doc < sparseMax);
++        if (doc >= sparseMax) {
++          continue;
++        }
++        sparse = false;
++        // Keep the base of the bit set a multiple of 64 away from the first match that we
++        // collected. Iterators that have long runs of adjacent doc IDs, e.g. postings of an index
++        // that is sorted, can then keep copying entire words into the bit set.
++        windowBase = doc - ((doc - windowBase) & 0x3F);
++      }
++
+       int windowMax =
+           MathUtil.unsignedMin(max, windowBase + DenseConjunctionBulkScorer.WINDOW_SIZE);
+ 
+       assert windowMatches.scanIsEmpty();
+       if (twoPhase == null) {
+         iterator.intoBitSet(windowMax, windowMatches, windowBase);
++        // Go back to collecting matches one by one if this window had few matches. Counting
++        // matches of every window would be wasteful, so only do it if the next match is far
++        // enough from the end of this window to suggest that matches are getting sparse.
++        if (iterator.docID() - windowMax >= MIN_GAP_FOR_SPARSE_CHECK) {
++          sparse = windowMatches.cardinality() < MIN_WINDOW_MATCHES;
++        }
+       } else {
+         twoPhase.intoBitSet(windowMax, windowMatches, windowBase);
+       }
+diff --git a/lucene/core/src/test/org/apache/lucene/search/TestBooleanScorer.java b/lucene/core/src/test/org/apache/lucene/search/TestBooleanScorer.java
+index a538efd31..cea096eb2 100644
+--- a/lucene/core/src/test/org/apache/lucene/search/TestBooleanScorer.java
++++ b/lucene/core/src/test/org/apache/lucene/search/TestBooleanScorer.java
+@@ -20,7 +20,9 @@ import static org.hamcrest.Matchers.instanceOf;
+ import static org.hamcrest.Matchers.not;
+ 
+ import java.io.IOException;
++import java.util.ArrayList;
+ import java.util.Arrays;
++import java.util.List;
+ import org.apache.lucene.document.Document;
+ import org.apache.lucene.document.Field;
+ import org.apache.lucene.document.Field.Store;
+@@ -218,6 +220,62 @@ public class TestBooleanScorer extends LuceneTestCase {
+   }
+ 
+   public void testConstantScoreScorerSupplierUsesIntoBitSet() throws IOException {
++    // 100 adjacent docs followed by 2 docs that are far from each other
++    int numAdjacentDocs = 100;
++    int[] docs = new int[numAdjacentDocs + 2];
++    for (int i = 0; i < numAdjacentDocs; ++i) {
++      docs[i] = i;
++    }
++    docs[numAdjacentDocs] = 5000;
++    docs[numAdjacentDocs + 1] = 8195;
++    CountingDocIdSetIterator iterator = new CountingDocIdSetIterator(docs);
++
++    FixedBitSet liveDocs = new FixedBitSet(9000);
++    liveDocs.set(0, 9000);
++    liveDocs.clear(2);
++    liveDocs.clear(50);
++    liveDocs.clear(5000);
++
++    List<Integer> collected = new ArrayList<>();
++    int[] collectedOneByOne = new int[1];
++    LeafCollector collector =
++        new LeafCollector() {
++          @Override
++          public void setScorer(Scorable scorer) {}
++
++          @Override
++          public void collect(int doc) {
++            collected.add(doc);
++            collectedOneByOne[0]++;
++          }
++
++          @Override
++          public void collect(DocIdStream stream) throws IOException {
++            stream.forEach(collected::add);
++          }
++        };
++
++    BulkScorer bulkScorer =
++        ConstantScoreScorerSupplier.fromIterator(iterator, 1f, ScoreMode.COMPLETE_NO_SCORES, 9000)
++            .bulkScorer();
++    assertThat(bulkScorer, instanceOf(ConstantScoreBulkScorer.class));
++    assertEquals(DocIdSetIterator.NO_MORE_DOCS, bulkScorer.score(collector, liveDocs, 0, 9000));
++
++    List<Integer> expected = new ArrayList<>();
++    for (int doc : docs) {
++      if (liveDocs.get(doc)) {
++        expected.add(doc);
++      }
++    }
++    assertEquals(expected, collected);
++    // The first matches are collected one by one until enough matches that are close to each other
++    // have been seen. One of them is deleted.
++    assertEquals(ConstantScoreBulkScorer.MIN_WINDOW_MATCHES - 1, collectedOneByOne[0]);
++    // One window for the remaining adjacent docs, another one for the two trailing docs.
++    assertEquals(2, iterator.intoBitSetCalls);
++  }
++
++  public void testConstantScoreScorerSupplierCollectsSparseMatchesOneByOne() throws IOException {
+     int[] docs = {1, 2, 4097, 5000, 8195};
+     CountingDocIdSetIterator iterator = new CountingDocIdSetIterator(docs);
+ 
+@@ -227,8 +285,7 @@ public class TestBooleanScorer extends LuceneTestCase {
+     liveDocs.clear(4097);
+     liveDocs.clear(5000);
+ 
+-    int[] collected = new int[docs.length];
+-    int[] count = new int[1];
++    List<Integer> collected = new ArrayList<>();
+     LeafCollector collector =
+         new LeafCollector() {
+           @Override
+@@ -236,25 +293,22 @@ public class TestBooleanScorer extends LuceneTestCase {
+ 
+           @Override
+           public void collect(int doc) {
+-            fail("ConstantScoreBulkScorer should collect via DocIdStream");
++            collected.add(doc);
+           }
+ 
+           @Override
+-          public void collect(DocIdStream stream) throws IOException {
+-            int[] buffer = new int[docs.length];
+-            for (int size = stream.intoArray(buffer); size != 0; size = stream.intoArray(buffer)) {
+-              System.arraycopy(buffer, 0, collected, count[0], size);
+-              count[0] += size;
+-            }
++          public void collect(DocIdStream stream) {
++            fail("Sparse matches should be collected one by one");
+           }
+         };
+ 
+     BulkScorer bulkScorer =
+         ConstantScoreScorerSupplier.fromIterator(iterator, 1f, ScoreMode.COMPLETE_NO_SCORES, 9000)
+             .bulkScorer();
++    assertThat(bulkScorer, instanceOf(ConstantScoreBulkScorer.class));
+     assertEquals(DocIdSetIterator.NO_MORE_DOCS, bulkScorer.score(collector, liveDocs, 0, 9000));
+-    assertArrayEquals(new int[] {1, 8195}, Arrays.copyOf(collected, count[0]));
+-    assertEquals(3, iterator.intoBitSetCalls);
++    assertEquals(List.of(1, 8195), collected);
++    assertEquals(0, iterator.intoBitSetCalls);
+   }
+ 
+   public void testCachedFilterOptionalConjunctionUsesConstantScoreBulkScorerDocIdStream()
+@@ -321,6 +375,7 @@ public class TestBooleanScorer extends LuceneTestCase {
+     int[] collected = new int[expectedHitCount];
+     int[] count = new int[1];
+     int[] streamCount = new int[1];
++    int[] collectedOneByOne = new int[1];
+     LeafCollector collector =
+         new LeafCollector() {
+           @Override
+@@ -328,7 +383,9 @@ public class TestBooleanScorer extends LuceneTestCase {
+ 
+           @Override
+           public void collect(int doc) {
+-            fail("Cached filtered optional conjunction should collect via ConstantScoreBulkScorer");
++            // Only used until enough matches that are close to each other have been seen.
++            collectedOneByOne[0]++;
++            collected[count[0]++] = doc;
+           }
+ 
+           @Override
+@@ -343,6 +400,7 @@ public class TestBooleanScorer extends LuceneTestCase {
+         };
+     assertEquals(DocIdSetIterator.NO_MORE_DOCS, bulkScorer.score(collector, null, 0, maxDoc));
+     assertTrue(streamCount[0] > 0);
++    assertEquals(ConstantScoreBulkScorer.MIN_WINDOW_MATCHES, collectedOneByOne[0]);
+     assertEquals(expectedHitCount, count[0]);
+     for (int i = 0; i < count[0]; ++i) {
+       assertEquals(1 + i * 50, collected[i]);
+diff --git a/lucene/core/src/test/org/apache/lucene/search/TestConstantScoreBulkScorer.java b/lucene/core/src/test/org/apache/lucene/search/TestConstantScoreBulkScorer.java
+index 290503742..87cec2d00 100644
+--- a/lucene/core/src/test/org/apache/lucene/search/TestConstantScoreBulkScorer.java
++++ b/lucene/core/src/test/org/apache/lucene/search/TestConstantScoreBulkScorer.java
+@@ -195,6 +195,129 @@ public class TestConstantScoreBulkScorer extends LuceneTestCase {
+     assertEquals(match, collect(bulkScorer, maxDoc, null));
+   }
+ 
++  /**
++   * Matches of a plain iterator are collected one by one where they are far apart from each other
++   * and via bit sets where they are close to each other. Check that switching back and forth
++   * between the two does not lose or duplicate matches.
++   */
++  public void testPlainIteratorWithSparseAndDenseRanges() throws IOException {
++    int maxDoc = 200_000;
++    FixedBitSet match = new FixedBitSet(maxDoc);
++    for (int doc = 0; doc < maxDoc; ) {
++      // alternate ranges of doc IDs that have different densities of matches
++      int rangeEnd = Math.min(maxDoc, doc + TestUtil.nextInt(random(), 1, 20_000));
++      int step =
++          switch (random().nextInt(4)) {
++            case 0 -> 1;
++            case 1 -> TestUtil.nextInt(random(), 2, 100);
++            case 2 -> TestUtil.nextInt(random(), 100, 1_000);
++            default -> TestUtil.nextInt(random(), 1_000, 10_000);
++          };
++      for (; doc < rangeEnd; doc += TestUtil.nextInt(random(), 1, step)) {
++        match.set(doc);
++      }
++    }
++    FixedBitSet acceptDocs = random().nextBoolean() ? null : modBitSet(maxDoc, 3);
++    FixedBitSet expected = match.clone();
++    if (acceptDocs != null) {
++      expected.and(acceptDocs);
++    }
++
++    BulkScorer scorer =
++        new ConstantScoreBulkScorer(
++            1f,
++            ScoreMode.COMPLETE_NO_SCORES,
++            new BitSetIterator(match, match.approximateCardinality()));
++    // AssertingBulkScorer randomly splits the scored range into smaller ranges.
++    scorer = AssertingBulkScorer.wrap(random(), scorer, maxDoc);
++
++    FixedBitSet result = new FixedBitSet(maxDoc);
++    int[] lastDoc = {-1};
++    scorer.score(
++        new LeafCollector() {
++          @Override
++          public void setScorer(Scorable scorer) throws IOException {}
++
++          @Override
++          public void collect(int doc) throws IOException {
++            assertTrue("docs must be collected in order", doc > lastDoc[0]);
++            lastDoc[0] = doc;
++            result.set(doc);
++          }
++        },
++        acceptDocs,
++        0,
++        DocIdSetIterator.NO_MORE_DOCS);
++    assertEquals(expected, result);
++  }
++
++  /** Matches that are far apart from each other must not be loaded into bit sets. */
++  public void testSparsePlainIteratorIsCollectedOneByOne() throws IOException {
++    int maxDoc = 1_000_000;
++    FixedBitSet match = modBitSet(maxDoc, TestUtil.nextInt(random(), 200, 10_000));
++    BulkScorer scorer =
++        new ConstantScoreBulkScorer(
++            1f,
++            ScoreMode.COMPLETE_NO_SCORES,
++            new BitSetIterator(match, match.approximateCardinality()));
++    FixedBitSet result = new FixedBitSet(maxDoc);
++    scorer.score(
++        new LeafCollector() {
++          @Override
++          public void setScorer(Scorable scorer) throws IOException {}
++
++          @Override
++          public void collect(int doc) throws IOException {
++            result.set(doc);
++          }
++
++          @Override
++          public void collect(DocIdStream stream) throws IOException {
++            fail("Sparse matches should be collected one by one");
++          }
++        },
++        null,
++        0,
++        DocIdSetIterator.NO_MORE_DOCS);
++    assertEquals(match, result);
++  }
++
++  /** Matches that are close to each other must be loaded into bit sets. */
++  public void testDensePlainIteratorIsCollectedViaBitSets() throws IOException {
++    int maxDoc = 1_000_000;
++    FixedBitSet match = modBitSet(maxDoc, TestUtil.nextInt(random(), 1, 100));
++    BulkScorer scorer =
++        new ConstantScoreBulkScorer(
++            1f,
++            ScoreMode.COMPLETE_NO_SCORES,
++            new BitSetIterator(match, match.approximateCardinality()));
++    FixedBitSet result = new FixedBitSet(maxDoc);
++    int[] collectedOneByOne = new int[1];
++    scorer.score(
++        new LeafCollector() {
++          @Override
++          public void setScorer(Scorable scorer) throws IOException {}
++
++          @Override
++          public void collect(int doc) throws IOException {
++            collectedOneByOne[0]++;
++            result.set(doc);
++          }
++
++          @Override
++          public void collect(DocIdStream stream) throws IOException {
++            stream.forEach(result::set);
++          }
++        },
++        null,
++        0,
++        DocIdSetIterator.NO_MORE_DOCS);
++    assertEquals(match, result);
++    // Only the first matches are collected one by one, until we know that matches are close to
++    // each other.
++    assertEquals(ConstantScoreBulkScorer.MIN_WINDOW_MATCHES, collectedOneByOne[0]);
++  }
++
+   /**
+    * The plain-iterator constructor must reject a {@link DocIdSetIterator} that wraps a {@link
+    * TwoPhaseIterator}: such an iterator has to go through the two-phase constructor so its
+-- 
+2.43.0
+

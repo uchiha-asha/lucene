@@ -1,0 +1,761 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter
+# Parameters: (numSegments = 1)
+
+# Run progress: 0.00% complete, ETA 00:01:04
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 2:59:02 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+1339.269 us/op
+# Warmup Iteration   2: 1368.732 us/op
+# Warmup Iteration   3: 1448.362 us/op
+Iteration   1: 1025.185 us/op
+                 gc.alloc.rate:      10.638 MB/sec
+                 gc.alloc.rate.norm: 11441.230 B/op
+                 gc.count:           ≈ 0 counts
+
+Iteration   2: 1211.346 us/op
+                 gc.alloc.rate:      8.959 MB/sec
+                 gc.alloc.rate.norm: 11394.538 B/op
+                 gc.count:           ≈ 0 counts
+
+Iteration   3: 1252.101 us/op
+                 gc.alloc.rate:      8.672 MB/sec
+                 gc.alloc.rate.norm: 11393.176 B/op
+                 gc.count:           ≈ 0 counts
+
+Iteration   4: 1156.492 us/op
+                 gc.alloc.rate:      9.390 MB/sec
+                 gc.alloc.rate.norm: 11392.285 B/op
+                 gc.count:           ≈ 0 counts
+
+Iteration   5: checksum(numSegments=1)=3281554686798311071
+1131.657 us/op
+                 gc.alloc.rate:      9.880 MB/sec
+                 gc.alloc.rate.norm: 11866.018 B/op
+                 gc.count:           ≈ 0 counts
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter":
+  1155.356 ±(99.9%) 333.486 us/op [Average]
+  (min, avg, max) = (1025.185, 1155.356, 1252.101), stdev = 86.605
+  CI (99.9%): [821.870, 1488.842] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate":
+  9.508 ±(99.9%) 3.000 MB/sec [Average]
+  (min, avg, max) = (8.672, 9.508, 10.638), stdev = 0.779
+  CI (99.9%): [6.507, 12.508] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate.norm":
+  11497.449 ±(99.9%) 797.388 B/op [Average]
+  (min, avg, max) = (11392.285, 11497.449, 11866.018), stdev = 207.079
+  CI (99.9%): [10700.062, 12294.837] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter:gc.count":
+  ≈ 0 counts
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter
+# Parameters: (numSegments = 20)
+
+# Run progress: 12.50% complete, ETA 00:01:00
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 2:59:11 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+1521.219 us/op
+# Warmup Iteration   2: 1231.635 us/op
+# Warmup Iteration   3: 1114.225 us/op
+Iteration   1: 1378.138 us/op
+                 gc.alloc.rate:      146.729 MB/sec
+                 gc.alloc.rate.norm: 212193.679 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            4.000 ms
+
+Iteration   2: 1293.078 us/op
+                 gc.alloc.rate:      156.414 MB/sec
+                 gc.alloc.rate.norm: 212193.116 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            4.000 ms
+
+Iteration   3: 1299.803 us/op
+                 gc.alloc.rate:      155.532 MB/sec
+                 gc.alloc.rate.norm: 212168.229 B/op
+                 gc.count:           2.000 counts
+                 gc.time:            12.000 ms
+
+Iteration   4: 1173.179 us/op
+                 gc.alloc.rate:      172.332 MB/sec
+                 gc.alloc.rate.norm: 212101.124 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            5.000 ms
+
+Iteration   5: checksum(numSegments=20)=3281554686798311071
+1333.857 us/op
+                 gc.alloc.rate:      148.798 MB/sec
+                 gc.alloc.rate.norm: 213222.805 B/op
+                 gc.count:           1.000 counts
+                 gc.time:            4.000 ms
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter":
+  1295.611 ±(99.9%) 293.806 us/op [Average]
+  (min, avg, max) = (1173.179, 1295.611, 1378.138), stdev = 76.300
+  CI (99.9%): [1001.805, 1589.417] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate":
+  155.961 ±(99.9%) 38.743 MB/sec [Average]
+  (min, avg, max) = (146.729, 155.961, 172.332), stdev = 10.061
+  CI (99.9%): [117.218, 194.704] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate.norm":
+  212375.791 ±(99.9%) 1829.048 B/op [Average]
+  (min, avg, max) = (212101.124, 212375.791, 213222.805), stdev = 474.998
+  CI (99.9%): [210546.743, 214204.839] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter:gc.count":
+  6.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (1.000, 1.200, 2.000), stdev = 0.447
+  CI (99.9%): [6.000, 6.000] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.denseTermFilter:gc.time":
+  29.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (4.000, 5.800, 12.000), stdev = 3.493
+  CI (99.9%): [29.000, 29.000] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids
+# Parameters: (numSegments = 1)
+
+# Run progress: 25.00% complete, ETA 00:00:52
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 2:59:19 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+7763.005 us/op
+# Warmup Iteration   2: 6067.658 us/op
+# Warmup Iteration   3: 6179.647 us/op
+Iteration   1: 5283.074 us/op
+                 gc.alloc.rate:      1750.474 MB/sec
+                 gc.alloc.rate.norm: 9702493.937 B/op
+                 gc.count:           4.000 counts
+                 gc.time:            11.000 ms
+
+Iteration   2: 4734.351 us/op
+                 gc.alloc.rate:      1953.488 MB/sec
+                 gc.alloc.rate.norm: 9702489.283 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            10.000 ms
+
+Iteration   3: 4590.566 us/op
+                 gc.alloc.rate:      2014.732 MB/sec
+                 gc.alloc.rate.norm: 9702488.661 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            9.000 ms
+
+Iteration   4: 5315.937 us/op
+                 gc.alloc.rate:      1739.813 MB/sec
+                 gc.alloc.rate.norm: 9702493.164 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            9.000 ms
+
+Iteration   5: checksum(numSegments=1)=1994724450445631889
+5059.337 us/op
+                 gc.alloc.rate:      1799.793 MB/sec
+                 gc.alloc.rate.norm: 9706400.643 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            9.000 ms
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids":
+  4996.653 ±(99.9%) 1250.152 us/op [Average]
+  (min, avg, max) = (4590.566, 4996.653, 5315.937), stdev = 324.660
+  CI (99.9%): [3746.501, 6246.805] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate":
+  1851.660 ±(99.9%) 480.945 MB/sec [Average]
+  (min, avg, max) = (1739.813, 1851.660, 2014.732), stdev = 124.900
+  CI (99.9%): [1370.715, 2332.604] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate.norm":
+  9703273.138 ±(99.9%) 6732.198 B/op [Average]
+  (min, avg, max) = (9702488.661, 9703273.138, 9706400.643), stdev = 1748.330
+  CI (99.9%): [9696540.940, 9710005.335] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.count":
+  25.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (4.000, 5.000, 6.000), stdev = 0.707
+  CI (99.9%): [25.000, 25.000] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.time":
+  48.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (9.000, 9.600, 11.000), stdev = 0.894
+  CI (99.9%): [48.000, 48.000] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids
+# Parameters: (numSegments = 20)
+
+# Run progress: 37.50% complete, ETA 00:00:43
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 2:59:28 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+71846.145 us/op
+# Warmup Iteration   2: 47636.963 us/op
+# Warmup Iteration   3: 41383.279 us/op
+Iteration   1: 40952.302 us/op
+                 gc.alloc.rate:      2796.540 MB/sec
+                 gc.alloc.rate.norm: 120143787.520 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            12.000 ms
+
+Iteration   2: 48666.324 us/op
+                 gc.alloc.rate:      2352.452 MB/sec
+                 gc.alloc.rate.norm: 120143841.524 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            13.000 ms
+
+Iteration   3: 43237.552 us/op
+                 gc.alloc.rate:      2648.541 MB/sec
+                 gc.alloc.rate.norm: 120141260.667 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            13.000 ms
+
+Iteration   4: 41343.307 us/op
+                 gc.alloc.rate:      2768.893 MB/sec
+                 gc.alloc.rate.norm: 120140400.960 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            12.000 ms
+
+Iteration   5: checksum(numSegments=20)=1994724450445631889
+40484.715 us/op
+                 gc.alloc.rate:      2783.205 MB/sec
+                 gc.alloc.rate.norm: 120173541.760 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            14.000 ms
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids":
+  42936.840 ±(99.9%) 12973.881 us/op [Average]
+  (min, avg, max) = (40484.715, 42936.840, 48666.324), stdev = 3369.276
+  CI (99.9%): [29962.959, 55910.721] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate":
+  2669.926 ±(99.9%) 720.144 MB/sec [Average]
+  (min, avg, max) = (2352.452, 2669.926, 2796.540), stdev = 187.019
+  CI (99.9%): [1949.782, 3390.070] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate.norm":
+  120148566.486 ±(99.9%) 54079.923 B/op [Average]
+  (min, avg, max) = (120140400.960, 120148566.486, 120173541.760), stdev = 14044.384
+  CI (99.9%): [120094486.563, 120202646.409] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.count":
+  31.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (6.000, 6.200, 7.000), stdev = 0.447
+  CI (99.9%): [31.000, 31.000] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.time":
+  64.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (12.000, 12.800, 14.000), stdev = 0.837
+  CI (99.9%): [64.000, 64.000] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids
+# Parameters: (numSegments = 1)
+
+# Run progress: 50.00% complete, ETA 00:00:35
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 2:59:37 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+513.839 us/op
+# Warmup Iteration   2: 272.832 us/op
+# Warmup Iteration   3: 232.791 us/op
+Iteration   1: 226.368 us/op
+                 gc.alloc.rate:      2554.912 MB/sec
+                 gc.alloc.rate.norm: 606961.592 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            11.000 ms
+
+Iteration   2: 234.592 us/op
+                 gc.alloc.rate:      2466.156 MB/sec
+                 gc.alloc.rate.norm: 606961.670 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            7.000 ms
+
+Iteration   3: 247.566 us/op
+                 gc.alloc.rate:      2337.002 MB/sec
+                 gc.alloc.rate.norm: 606961.746 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            11.000 ms
+
+Iteration   4: 242.179 us/op
+                 gc.alloc.rate:      2388.959 MB/sec
+                 gc.alloc.rate.norm: 606961.708 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            7.000 ms
+
+Iteration   5: checksum(numSegments=1)=1220745403308088070
+230.412 us/op
+                 gc.alloc.rate:      2486.608 MB/sec
+                 gc.alloc.rate.norm: 607140.759 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            8.000 ms
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids":
+  236.224 ±(99.9%) 33.219 us/op [Average]
+  (min, avg, max) = (226.368, 236.224, 247.566), stdev = 8.627
+  CI (99.9%): [203.005, 269.442] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate":
+  2446.727 ±(99.9%) 328.146 MB/sec [Average]
+  (min, avg, max) = (2337.002, 2446.727, 2554.912), stdev = 85.219
+  CI (99.9%): [2118.581, 2774.874] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate.norm":
+  606997.495 ±(99.9%) 308.387 B/op [Average]
+  (min, avg, max) = (606961.592, 606997.495, 607140.759), stdev = 80.087
+  CI (99.9%): [606689.108, 607305.882] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.count":
+  28.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (5.000, 5.600, 6.000), stdev = 0.548
+  CI (99.9%): [28.000, 28.000] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.time":
+  44.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (7.000, 8.800, 11.000), stdev = 2.049
+  CI (99.9%): [44.000, 44.000] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids
+# Parameters: (numSegments = 20)
+
+# Run progress: 62.50% complete, ETA 00:00:26
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 2:59:46 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+5039.263 us/op
+# Warmup Iteration   2: 3177.070 us/op
+# Warmup Iteration   3: 2328.022 us/op
+Iteration   1: 2725.018 us/op
+                 gc.alloc.rate:      2656.465 MB/sec
+                 gc.alloc.rate.norm: 7595173.761 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            10.000 ms
+
+Iteration   2: 2502.128 us/op
+                 gc.alloc.rate:      2893.297 MB/sec
+                 gc.alloc.rate.norm: 7595169.720 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            16.000 ms
+
+Iteration   3: 2444.403 us/op
+                 gc.alloc.rate:      2961.602 MB/sec
+                 gc.alloc.rate.norm: 7595172.312 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            11.000 ms
+
+Iteration   4: 2468.651 us/op
+                 gc.alloc.rate:      2932.816 MB/sec
+                 gc.alloc.rate.norm: 7595169.300 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            13.000 ms
+
+Iteration   5: checksum(numSegments=20)=1220745403308088070
+2283.460 us/op
+                 gc.alloc.rate:      3129.739 MB/sec
+                 gc.alloc.rate.norm: 7597055.289 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            10.000 ms
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids":
+  2484.732 ±(99.9%) 610.164 us/op [Average]
+  (min, avg, max) = (2283.460, 2484.732, 2725.018), stdev = 158.458
+  CI (99.9%): [1874.568, 3094.896] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate":
+  2914.784 ±(99.9%) 655.495 MB/sec [Average]
+  (min, avg, max) = (2656.465, 2914.784, 3129.739), stdev = 170.230
+  CI (99.9%): [2259.289, 3570.279] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate.norm":
+  7595548.077 ±(99.9%) 3244.397 B/op [Average]
+  (min, avg, max) = (7595169.300, 7595548.077, 7597055.289), stdev = 842.560
+  CI (99.9%): [7592303.680, 7598792.473] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.count":
+  34.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (6.000, 6.800, 7.000), stdev = 0.447
+  CI (99.9%): [34.000, 34.000] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.time":
+  60.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (10.000, 12.000, 16.000), stdev = 2.550
+  CI (99.9%): [60.000, 60.000] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword
+# Parameters: (numSegments = 1)
+
+# Run progress: 75.00% complete, ETA 00:00:17
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 2:59:54 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+2427.412 us/op
+# Warmup Iteration   2: 1764.254 us/op
+# Warmup Iteration   3: 1689.117 us/op
+Iteration   1: 1513.493 us/op
+                 gc.alloc.rate:      2319.547 MB/sec
+                 gc.alloc.rate.norm: 3683036.938 B/op
+                 gc.count:           6.000 counts
+                 gc.time:            15.000 ms
+
+Iteration   2: 1459.168 us/op
+                 gc.alloc.rate:      2405.779 MB/sec
+                 gc.alloc.rate.norm: 3682848.641 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            12.000 ms
+
+Iteration   3: 1580.633 us/op
+                 gc.alloc.rate:      2220.621 MB/sec
+                 gc.alloc.rate.norm: 3682755.286 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            9.000 ms
+
+Iteration   4: 1364.111 us/op
+                 gc.alloc.rate:      2573.736 MB/sec
+                 gc.alloc.rate.norm: 3682753.984 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            12.000 ms
+
+Iteration   5: checksum(numSegments=1)=6965452670129511258
+1437.217 us/op
+                 gc.alloc.rate:      2418.618 MB/sec
+                 gc.alloc.rate.norm: 3683919.805 B/op
+                 gc.count:           7.000 counts
+                 gc.time:            12.000 ms
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword":
+  1470.924 ±(99.9%) 313.606 us/op [Average]
+  (min, avg, max) = (1364.111, 1470.924, 1580.633), stdev = 81.442
+  CI (99.9%): [1157.319, 1784.530] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate":
+  2387.660 ±(99.9%) 503.729 MB/sec [Average]
+  (min, avg, max) = (2220.621, 2387.660, 2573.736), stdev = 130.817
+  CI (99.9%): [1883.931, 2891.389] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate.norm":
+  3683062.931 ±(99.9%) 1897.123 B/op [Average]
+  (min, avg, max) = (3682753.984, 3683062.931, 3683919.805), stdev = 492.677
+  CI (99.9%): [3681165.808, 3684960.054] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.count":
+  32.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (5.000, 6.400, 7.000), stdev = 0.894
+  CI (99.9%): [32.000, 32.000] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.time":
+  60.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (9.000, 12.000, 15.000), stdev = 2.121
+  CI (99.9%): [60.000, 60.000] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 25.0.5.0.3, OpenJDK 64-Bit Server VM, 25.0.5.0.3+1-1-24.04.1-Ubuntu
+# VM invoker: /usr/lib/jvm/java-25-openjdk-amd64/bin/java
+# VM options: --add-modules=jdk.incubator.vector --module-path=/home/user/lucene-bench/mp/base -Djdk.module.main=org.apache.lucene.benchmark.jmh -Dbench.index.dir=/home/user/lucene-bench/indexes
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword
+# Parameters: (numSegments = 20)
+
+# Run progress: 87.50% complete, ETA 00:00:08
+# Fork: 1 of 1
+WARNING: Using incubator modules: jdk.incubator.vector
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by org.openjdk.jmh.util.Utils (file:/home/user/lucene-bench/mp/base/jmh-core-1.37.jar)
+WARNING: Please consider reporting this to the maintainers of class org.openjdk.jmh.util.Utils
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+# Warmup Iteration   1: WARNING: A restricted method in java.lang.foreign.Linker has been called
+WARNING: java.lang.foreign.Linker::downcallHandle has been called by org.apache.lucene.store.PosixNativeAccess in module org.apache.lucene.core (file:/home/user/lucene-bench/mp/base/lucene-core-11.0.0-SNAPSHOT.jar)
+WARNING: Use --enable-native-access=org.apache.lucene.core to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Nov 12, 2026 3:00:03 PM org.apache.lucene.internal.vectorization.PanamaVectorizationProvider logIncubatorSetup
+INFO: Java vector incubator API enabled; uses preferredBitSize=512; FMA enabled
+1922.199 us/op
+# Warmup Iteration   2: 1293.110 us/op
+# Warmup Iteration   3: 1151.636 us/op
+Iteration   1: 1166.762 us/op
+                 gc.alloc.rate:      1687.445 MB/sec
+                 gc.alloc.rate.norm: 2066080.821 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            9.000 ms
+
+Iteration   2: 1249.933 us/op
+                 gc.alloc.rate:      1575.555 MB/sec
+                 gc.alloc.rate.norm: 2066059.246 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            8.000 ms
+
+Iteration   3: 1132.315 us/op
+                 gc.alloc.rate:      1739.465 MB/sec
+                 gc.alloc.rate.norm: 2066056.099 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            7.000 ms
+
+Iteration   4: 1224.352 us/op
+                 gc.alloc.rate:      1606.904 MB/sec
+                 gc.alloc.rate.norm: 2066057.046 B/op
+                 gc.count:           5.000 counts
+                 gc.time:            7.000 ms
+
+Iteration   5: checksum(numSegments=20)=-7317139771269879097
+1278.518 us/op
+                 gc.alloc.rate:      1517.646 MB/sec
+                 gc.alloc.rate.norm: 2067157.987 B/op
+                 gc.count:           4.000 counts
+                 gc.time:            6.000 ms
+
+
+
+Result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword":
+  1210.376 ±(99.9%) 231.032 us/op [Average]
+  (min, avg, max) = (1132.315, 1210.376, 1278.518), stdev = 59.998
+  CI (99.9%): [979.344, 1441.408] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate":
+  1625.403 ±(99.9%) 340.613 MB/sec [Average]
+  (min, avg, max) = (1517.646, 1625.403, 1739.465), stdev = 88.456
+  CI (99.9%): [1284.790, 1966.016] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate.norm":
+  2066282.240 ±(99.9%) 1885.519 B/op [Average]
+  (min, avg, max) = (2066056.099, 2066282.240, 2067157.987), stdev = 489.663
+  CI (99.9%): [2064396.720, 2068167.759] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.count":
+  24.000 ±(99.9%) 0.001 counts [Sum]
+  (min, avg, max) = (4.000, 4.800, 5.000), stdev = 0.447
+  CI (99.9%): [24.000, 24.000] (assumes normal distribution)
+
+Secondary result "org.apache.lucene.benchmark.jmh.PostingsEnumAllocationBenchmark.sortByKeyword:gc.time":
+  37.000 ±(99.9%) 0.001 ms [Sum]
+  (min, avg, max) = (6.000, 7.400, 9.000), stdev = 1.140
+  CI (99.9%): [37.000, 37.000] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:01:09
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                                                (numSegments)  Mode  Cnt          Score       Error   Units
+PostingsEnumAllocationBenchmark.denseTermFilter                                      1  avgt    5       1155.356 ±   333.486   us/op
+PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate                        1  avgt    5          9.508 ±     3.000  MB/sec
+PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate.norm                   1  avgt    5      11497.449 ±   797.388    B/op
+PostingsEnumAllocationBenchmark.denseTermFilter:gc.count                             1  avgt    5            ≈ 0              counts
+PostingsEnumAllocationBenchmark.denseTermFilter                                     20  avgt    5       1295.611 ±   293.806   us/op
+PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate                       20  avgt    5        155.961 ±    38.743  MB/sec
+PostingsEnumAllocationBenchmark.denseTermFilter:gc.alloc.rate.norm                  20  avgt    5     212375.791 ±  1829.048    B/op
+PostingsEnumAllocationBenchmark.denseTermFilter:gc.count                            20  avgt    5          6.000              counts
+PostingsEnumAllocationBenchmark.denseTermFilter:gc.time                             20  avgt    5         29.000                  ms
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids                                 1  avgt    5       4996.653 ±  1250.152   us/op
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate                   1  avgt    5       1851.660 ±   480.945  MB/sec
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate.norm              1  avgt    5    9703273.138 ±  6732.198    B/op
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.count                        1  avgt    5         25.000              counts
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.time                         1  avgt    5         48.000                  ms
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids                                20  avgt    5      42936.840 ± 12973.881   us/op
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate                  20  avgt    5       2669.926 ±   720.144  MB/sec
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.alloc.rate.norm             20  avgt    5  120148566.486 ± 54079.923    B/op
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.count                       20  avgt    5         31.000              counts
+PostingsEnumAllocationBenchmark.disjunctionOf1024Ids:gc.time                        20  avgt    5         64.000                  ms
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids                                   1  avgt    5        236.224 ±    33.219   us/op
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate                     1  avgt    5       2446.727 ±   328.146  MB/sec
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate.norm                1  avgt    5     606997.495 ±   308.387    B/op
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.count                          1  avgt    5         28.000              counts
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.time                           1  avgt    5         44.000                  ms
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids                                  20  avgt    5       2484.732 ±   610.164   us/op
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate                    20  avgt    5       2914.784 ±   655.495  MB/sec
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.alloc.rate.norm               20  avgt    5    7595548.077 ±  3244.397    B/op
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.count                         20  avgt    5         34.000              counts
+PostingsEnumAllocationBenchmark.disjunctionOf64Ids:gc.time                          20  avgt    5         60.000                  ms
+PostingsEnumAllocationBenchmark.sortByKeyword                                        1  avgt    5       1470.924 ±   313.606   us/op
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate                          1  avgt    5       2387.660 ±   503.729  MB/sec
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate.norm                     1  avgt    5    3683062.931 ±  1897.123    B/op
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.count                               1  avgt    5         32.000              counts
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.time                                1  avgt    5         60.000                  ms
+PostingsEnumAllocationBenchmark.sortByKeyword                                       20  avgt    5       1210.376 ±   231.032   us/op
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate                         20  avgt    5       1625.403 ±   340.613  MB/sec
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.alloc.rate.norm                    20  avgt    5    2066282.240 ±  1885.519    B/op
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.count                              20  avgt    5         24.000              counts
+PostingsEnumAllocationBenchmark.sortByKeyword:gc.time                               20  avgt    5         37.000                  ms
+
+Benchmark result is saved to /home/user/lucene-bench/results/p2-gc.base.json

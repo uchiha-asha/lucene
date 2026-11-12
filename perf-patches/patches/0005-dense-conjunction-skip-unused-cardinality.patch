@@ -1,0 +1,36 @@
+From 79e1e1f29b54aa641ae283bafe0e928f01b3d16e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 12 Nov 2026 12:26:20 +0000
+Subject: [PATCH] Don't compute the cardinality of the window when there is no
+ clause left to apply
+
+DenseConjunctionBulkScorer computed the cardinality of the window bit set to decide
+whether to keep applying clauses via bit sets, even when all clauses had been applied
+already. This cost one extra pop count of the window per window, including for
+single-clause queries.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01EozJPtiJsJKEVATGbxEknG
+---
+ .../org/apache/lucene/search/DenseConjunctionBulkScorer.java | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/lucene/core/src/java/org/apache/lucene/search/DenseConjunctionBulkScorer.java b/lucene/core/src/java/org/apache/lucene/search/DenseConjunctionBulkScorer.java
+index 9f59eb2c2..4251ace7d 100644
+--- a/lucene/core/src/java/org/apache/lucene/search/DenseConjunctionBulkScorer.java
++++ b/lucene/core/src/java/org/apache/lucene/search/DenseConjunctionBulkScorer.java
+@@ -286,9 +286,8 @@ final class DenseConjunctionBulkScorer extends BulkScorer {
+     int windowSize = windowMax - windowBase;
+     int threshold = windowSize / DENSITY_THRESHOLD_INVERSE;
+     int upTo = 1; // the leading clause at index 0 is already applied
+-    for (int cardinality = windowMatches.cardinality();
+-        upTo < iterators.size() && cardinality >= threshold;
+-        upTo++, cardinality = windowMatches.cardinality()) {
++    // Only compute the cardinality of the window if there are clauses left to apply.
++    for (; upTo < iterators.size() && windowMatches.cardinality() >= threshold; upTo++) {
+       DisiWrapper other = iterators.get(upTo);
+       if (other.docID() < windowBase) {
+         other.approximation().advance(windowBase);
+-- 
+2.43.0
+

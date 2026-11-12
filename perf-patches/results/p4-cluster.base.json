@@ -1,0 +1,226 @@
+[
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocIds",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 3,
+        "jvm" : "/usr/lib/jvm/java-25-openjdk-amd64/bin/java",
+        "jvmArgs" : [
+            "--add-modules=jdk.incubator.vector",
+            "--module-path=/home/user/lucene-bench/mp/base",
+            "-Djdk.module.main=org.apache.lucene.benchmark.jmh",
+            "-Dbench.index.dir=/home/user/lucene-bench/indexes"
+        ],
+        "jdkVersion" : "25.0.5.0.3",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.5.0.3+1-1-24.04.1-Ubuntu",
+        "warmupIterations" : 3,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "deletedPercent" : "0",
+            "gap" : "50",
+            "source" : "cluster"
+        },
+        "primaryMetric" : {
+            "score" : 129.80266467967508,
+            "scoreError" : 8.619171886827713,
+            "scoreConfidence" : [
+                121.18349279284736,
+                138.42183656650278
+            ],
+            "scorePercentiles" : {
+                "0.0" : 111.16658395377264,
+                "50.0" : 131.70193338599262,
+                "90.0" : 139.94304605487608,
+                "95.0" : 140.36462079124578,
+                "99.0" : 140.36462079124578,
+                "99.9" : 140.36462079124578,
+                "99.99" : 140.36462079124578,
+                "99.999" : 140.36462079124578,
+                "99.9999" : 140.36462079124578,
+                "100.0" : 140.36462079124578
+            },
+            "scoreUnit" : "us/op",
+            "rawData" : [
+                [
+                    135.25436736073553,
+                    127.95961665387567,
+                    131.70193338599262,
+                    132.7922717016193,
+                    132.2206776793974
+                ],
+                [
+                    111.16658395377264,
+                    131.97860646437994,
+                    140.36462079124578,
+                    119.87739767553319,
+                    119.65960789473684
+                ],
+                [
+                    130.94561212200549,
+                    139.66199623062963,
+                    129.51372462454685,
+                    138.51090600775194,
+                    125.43204764890282
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.collectDocValues",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 3,
+        "jvm" : "/usr/lib/jvm/java-25-openjdk-amd64/bin/java",
+        "jvmArgs" : [
+            "--add-modules=jdk.incubator.vector",
+            "--module-path=/home/user/lucene-bench/mp/base",
+            "-Djdk.module.main=org.apache.lucene.benchmark.jmh",
+            "-Dbench.index.dir=/home/user/lucene-bench/indexes"
+        ],
+        "jdkVersion" : "25.0.5.0.3",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.5.0.3+1-1-24.04.1-Ubuntu",
+        "warmupIterations" : 3,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "deletedPercent" : "0",
+            "gap" : "50",
+            "source" : "cluster"
+        },
+        "primaryMetric" : {
+            "score" : 449.3863214842405,
+            "scoreError" : 79.043577430852,
+            "scoreConfidence" : [
+                370.3427440533885,
+                528.4298989150925
+            ],
+            "scorePercentiles" : {
+                "0.0" : 355.37519140625,
+                "50.0" : 440.48316160281814,
+                "90.0" : 570.4599775022125,
+                "95.0" : 650.0576803118909,
+                "99.0" : 650.0576803118909,
+                "99.9" : 650.0576803118909,
+                "99.99" : 650.0576803118909,
+                "99.999" : 650.0576803118909,
+                "99.9999" : 650.0576803118909,
+                "100.0" : 650.0576803118909
+            },
+            "scoreUnit" : "us/op",
+            "rawData" : [
+                [
+                    650.0576803118909,
+                    508.78831113370615,
+                    445.47556322350846,
+                    471.17685445124823,
+                    517.3948422957601
+                ],
+                [
+                    400.37497759103644,
+                    483.001666023166,
+                    430.4585217204301,
+                    382.878573670111,
+                    355.37519140625
+                ],
+                [
+                    390.44616621147094,
+                    440.48316160281814,
+                    403.3255195485691,
+                    385.4882559661278,
+                    476.0695371075166
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "org.apache.lucene.benchmark.jmh.SparseFilterBulkScorerBenchmark.count",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 3,
+        "jvm" : "/usr/lib/jvm/java-25-openjdk-amd64/bin/java",
+        "jvmArgs" : [
+            "--add-modules=jdk.incubator.vector",
+            "--module-path=/home/user/lucene-bench/mp/base",
+            "-Djdk.module.main=org.apache.lucene.benchmark.jmh",
+            "-Dbench.index.dir=/home/user/lucene-bench/indexes"
+        ],
+        "jdkVersion" : "25.0.5.0.3",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.5.0.3+1-1-24.04.1-Ubuntu",
+        "warmupIterations" : 3,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "deletedPercent" : "0",
+            "gap" : "50",
+            "source" : "cluster"
+        },
+        "primaryMetric" : {
+            "score" : 8.701716850344116,
+            "scoreError" : 1.1065987015693919,
+            "scoreConfidence" : [
+                7.595118148774724,
+                9.808315551913509
+            ],
+            "scorePercentiles" : {
+                "0.0" : 7.118978898449232,
+                "50.0" : 8.767177897928423,
+                "90.0" : 10.530858464127627,
+                "95.0" : 11.152726603235438,
+                "99.0" : 11.152726603235438,
+                "99.9" : 11.152726603235438,
+                "99.99" : 11.152726603235438,
+                "99.999" : 11.152726603235438,
+                "99.9999" : 11.152726603235438,
+                "100.0" : 11.152726603235438
+            },
+            "scoreUnit" : "us/op",
+            "rawData" : [
+                [
+                    8.813526700205285,
+                    9.697280054671294,
+                    7.118978898449232,
+                    10.11627970472242,
+                    8.94498258948931
+                ],
+                [
+                    8.331953570893099,
+                    11.152726603235438,
+                    8.795476691887531,
+                    8.220100305699823,
+                    8.767177897928423
+                ],
+                [
+                    8.13721849375244,
+                    8.462307416399488,
+                    7.277855293886549,
+                    8.783362057612447,
+                    7.906526476328953
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    }
+]
+
+
