@@ -87,6 +87,10 @@ public abstract class MultiTermQuery extends Query {
       new RewriteMethod() {
         @Override
         public Query rewrite(IndexSearcher indexSearcher, MultiTermQuery query) {
+          Query singleTerm = TermInSetQuery.rewriteSingleTerm(query);
+          if (singleTerm != null) {
+            return singleTerm;
+          }
           return new MultiTermQueryConstantScoreBlendedWrapper<>(query);
         }
       };
@@ -104,6 +108,10 @@ public abstract class MultiTermQuery extends Query {
       new RewriteMethod() {
         @Override
         public Query rewrite(IndexSearcher indexSearcher, MultiTermQuery query) {
+          Query singleTerm = TermInSetQuery.rewriteSingleTerm(query);
+          if (singleTerm != null) {
+            return singleTerm;
+          }
           return new MultiTermQueryConstantScoreWrapper<>(query);
         }
       };

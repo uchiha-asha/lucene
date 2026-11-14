@@ -41,6 +41,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -492,6 +493,108 @@ public class TestTermInSetQuery extends LuceneTestCase {
     TermInSetQuery query =
         new TermInSetQuery("field", List.of(newBytesRef(new byte[] {(byte) 0xff, (byte) 0xfe})));
     assertEquals("field:([ff fe])", query.toString());
+  }
+
+  public void testSingleTermRewrite() throws IOException {
+    IndexSearcher searcher = new IndexSearcher(new MultiReader());
+    Query expected = new ConstantScoreQuery(new TermQuery(new Term("f", "a")));
+    for (MultiTermQuery.RewriteMethod method :
+        List.of(
+            MultiTermQuery.CONSTANT_SCORE_BLENDED_REWRITE, MultiTermQuery.CONSTANT_SCORE_REWRITE)) {
+      assertEquals(
+          expected, searcher.rewrite(new TermInSetQuery(method, "f", List.of(newBytesRef("a")))));
+      // duplicates are removed before the rewrite
+      assertEquals(
+          expected,
+          searcher.rewrite(
+              new TermInSetQuery(method, "f", List.of(newBytesRef("a"), newBytesRef("a")))));
+      // empty and multi-term sets keep the wrapper
+      assertNotSingleTermRewrite(searcher, new TermInSetQuery(method, "f", List.of()));
+      assertNotSingleTermRewrite(
+          searcher, new TermInSetQuery(method, "f", List.of(newBytesRef("a"), newBytesRef("b"))));
+      // subclasses keep the wrapper
+      assertNotSingleTermRewrite(
+          searcher, new TermInSetQuery(method, "f", List.of(newBytesRef("a"))) {});
+    }
+    assertEquals(expected, searcher.rewrite(new TermInSetQuery("f", List.of(newBytesRef("a")))));
+    // other rewrite methods are unchanged
+    for (MultiTermQuery.RewriteMethod method :
+        List.of(
+            MultiTermQuery.DOC_VALUES_REWRITE,
+            MultiTermQuery.SCORING_BOOLEAN_REWRITE,
+            MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE)) {
+      assertNotSingleTermRewrite(
+          searcher, new TermInSetQuery(method, "f", List.of(newBytesRef("a"))));
+    }
+    // the doc values query of newIndexOrDocValuesQuery is unchanged
+    Query indexOrDocValues =
+        searcher.rewrite(
+            TermInSetQuery.newIndexOrDocValuesQuery(
+                MultiTermQuery.CONSTANT_SCORE_BLENDED_REWRITE, "f", List.of(newBytesRef("a"))));
+    assertTrue(indexOrDocValues instanceof IndexOrDocValuesQuery);
+    assertEquals(expected, ((IndexOrDocValuesQuery) indexOrDocValues).getIndexQuery());
+    assertNotSingleTermRewrite(
+        searcher, ((IndexOrDocValuesQuery) indexOrDocValues).getRandomAccessQuery());
+  }
+
+  private static void assertNotSingleTermRewrite(IndexSearcher searcher, Query query)
+      throws IOException {
+    Query rewritten = searcher.rewrite(query);
+    assertFalse(rewritten.toString(), rewritten instanceof TermQuery);
+    assertFalse(
+        rewritten.toString(),
+        rewritten instanceof ConstantScoreQuery csq && csq.getQuery() instanceof TermQuery);
+  }
+
+  public void testSingleTermScores() throws IOException {
+    try (Directory dir = newDirectory()) {
+      try (RandomIndexWriter w = new RandomIndexWriter(random(), dir)) {
+        int numDocs = atLeast(100);
+        for (int i = 0; i < numDocs; i++) {
+          Document doc = new Document();
+          doc.add(new KeywordField("f", Integer.toString(random().nextInt(5)), Store.NO));
+          doc.add(new KeywordField("g", Integer.toString(random().nextInt(3)), Store.NO));
+          w.addDocument(doc);
+        }
+      }
+      try (DirectoryReader reader = DirectoryReader.open(dir)) {
+        IndexSearcher searcher = newSearcher(reader);
+        BytesRef term = newBytesRef(Integer.toString(random().nextInt(6)));
+        float boost = random().nextInt(5) + 0.5f;
+        Query singleton = new TermInSetQuery("f", List.of(term, term));
+        // CONSTANT_SCORE_BOOLEAN_REWRITE does not take the single-term path
+        Query reference =
+            new TermInSetQuery(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE, "f", List.of(term));
+        assertSameScores(
+            searcher, new BoostQuery(singleton, boost), new BoostQuery(reference, boost));
+        Query other = new TermQuery(new Term("g", "1"));
+        for (Occur occur : List.of(Occur.MUST, Occur.SHOULD, Occur.FILTER)) {
+          assertSameScores(
+              searcher,
+              new BooleanQuery.Builder()
+                  .add(other, Occur.MUST)
+                  .add(new BoostQuery(singleton, boost), occur)
+                  .build(),
+              new BooleanQuery.Builder()
+                  .add(other, Occur.MUST)
+                  .add(new BoostQuery(reference, boost), occur)
+                  .build());
+        }
+        assertEquals(searcher.count(reference), searcher.count(singleton));
+      }
+    }
+  }
+
+  private static void assertSameScores(IndexSearcher searcher, Query actual, Query expected)
+      throws IOException {
+    int n = searcher.getIndexReader().maxDoc();
+    ScoreDoc[] actualHits = searcher.search(actual, n).scoreDocs;
+    ScoreDoc[] expectedHits = searcher.search(expected, n).scoreDocs;
+    assertEquals(expectedHits.length, actualHits.length);
+    for (int i = 0; i < expectedHits.length; i++) {
+      assertEquals(expectedHits[i].doc, actualHits[i].doc);
+      assertEquals(expectedHits[i].score, actualHits[i].score, 0f);
+    }
   }
 
   public void testIsConsideredCostlyByQueryCache() throws IOException {

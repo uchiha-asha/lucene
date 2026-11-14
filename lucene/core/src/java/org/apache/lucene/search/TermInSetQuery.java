@@ -68,6 +68,10 @@ import org.apache.lucene.util.automaton.ByteRunAutomaton;
  * MultiTermQuery#SCORING_BOOLEAN_REWRITE}). See {@link MultiTermQuery} documentation for more
  * rewrite options.
  *
+ * <p>With {@link MultiTermQuery#CONSTANT_SCORE_BLENDED_REWRITE} or {@link
+ * MultiTermQuery#CONSTANT_SCORE_REWRITE}, a query with a single distinct term rewrites to a {@link
+ * ConstantScoreQuery} over a {@link TermQuery}.
+ *
  * <p>NOTE: This query produces scores that are equal to its boost
  */
 public class TermInSetQuery extends MultiTermQuery implements Accountable {
@@ -118,6 +122,24 @@ public class TermInSetQuery extends MultiTermQuery implements Accountable {
     this.field = field;
     this.termData = termData;
     termDataHashCode = termData.hashCode();
+  }
+
+  /**
+   * Returns a {@link ConstantScoreQuery} over a {@link TermQuery} if {@code query} is a {@link
+   * TermInSetQuery} (not a subclass) with a single distinct term, or {@code null} otherwise. Used
+   * by the postings-based constant-score rewrite methods, for which both forms match the same
+   * documents with the same constant score; the {@link TermQuery} avoids collecting terms per
+   * segment.
+   */
+  static Query rewriteSingleTerm(MultiTermQuery query) {
+    if (query.getClass() == TermInSetQuery.class) {
+      TermInSetQuery termInSetQuery = (TermInSetQuery) query;
+      if (termInSetQuery.termData.size() == 1) {
+        BytesRef term = BytesRef.deepCopyOf(termInSetQuery.termData.iterator().next());
+        return new ConstantScoreQuery(new TermQuery(new Term(termInSetQuery.field, term)));
+      }
+    }
+    return null;
   }
 
   private static PrefixCodedTerms packTerms(String field, Collection<BytesRef> terms) {
