@@ -338,18 +338,15 @@ public abstract class LongValuesSource implements SegmentCacheable {
           LongValuesHolder holder = new LongValuesHolder();
 
           return new LongComparator.LongLeafComparator(context) {
-            LeafReaderContext ctx;
-
             @Override
             protected NumericDocValues getNumericDocValues(
                 LeafReaderContext context, String field) {
-              ctx = context;
               return asNumericDocValues(holder);
             }
 
             @Override
             public void setScorer(Scorable scorer) throws IOException {
-              holder.values = producer.getValues(ctx, DoubleValuesSource.fromScorer(scorer));
+              holder.values = producer.getValues(context, DoubleValuesSource.fromScorer(scorer));
               super.setScorer(scorer);
             }
           };

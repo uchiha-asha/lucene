@@ -682,18 +682,15 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
           DoubleValuesHolder holder = new DoubleValuesHolder();
 
           return new DoubleComparator.DoubleLeafComparator(context) {
-            LeafReaderContext ctx;
-
             @Override
             protected NumericDocValues getNumericDocValues(
                 LeafReaderContext context, String field) {
-              ctx = context;
               return asNumericDocValues(holder, Double::doubleToLongBits);
             }
 
             @Override
             public void setScorer(Scorable scorer) throws IOException {
-              holder.values = producer.getValues(ctx, fromScorer(scorer));
+              holder.values = producer.getValues(context, fromScorer(scorer));
               super.setScorer(scorer);
             }
           };
