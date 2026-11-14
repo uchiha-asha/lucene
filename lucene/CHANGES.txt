@@ -373,8 +373,8 @@ Optimizations
   IOContext, allowing MMapDirectory to open them with confined areas and avoiding JVM-wide
   handshakes when the files are closed. (Alan Woodward)
 
-* GITHUB#XXXXX: FST.readMetadata reads small empty-string outputs into an exact-size array, avoiding a
-  16 KB copy buffer and a 1 KB block per FST that accepts the empty input. (Asharam)
+* GITHUB#XXXXX: FST.readMetadata reads small empty-string outputs into an exact-size array,
+  avoiding a 16 KB copy buffer and a 1 KB block per FST that accepts the empty input. (Asharam)
 
 Bug Fixes
 ---------------------

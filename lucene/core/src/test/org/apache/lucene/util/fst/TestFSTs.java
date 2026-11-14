@@ -1251,7 +1251,9 @@ public class TestFSTs extends LuceneTestCase {
 
   public void testEmptyOutputMetadataRoundTrip() throws Exception {
     ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-    for (int length : new int[] {1, 2, 1023, 1024, 1025, 2048, 2049, 5000}) {
+    Set<Integer> serializedLengths = new HashSet<>();
+    // serialized lengths (vInt length + bytes): 2, 3, 1023, 1024, 1025, 1026, 2048, 2049, 5002
+    for (int length : new int[] {1, 2, 1021, 1022, 1023, 1024, 2046, 2047, 5000}) {
       byte[] bytes = new byte[length];
       random().nextBytes(bytes);
       BytesRef emptyOutput = new BytesRef(bytes);
@@ -1275,17 +1277,23 @@ public class TestFSTs extends LuceneTestCase {
       assertEquals(emptyOutput, Util.get(loaded, new BytesRef()));
       assertEquals(newBytesRef("x"), Util.get(loaded, newBytesRef("a")));
 
-      // header, accepts-empty byte, vInt length, then the empty output: cut inside the output
+      ByteBuffersDataOutput serialized = new ByteBuffersDataOutput();
+      outputs.writeFinalOutput(emptyOutput, serialized);
+      int numBytes = Math.toIntExact(serialized.size());
+      serializedLengths.add(numBytes);
+
+      // header, accepts-empty byte, vInt numBytes, then the empty output: cut inside the output
       ByteBuffersDataOutput prefix = new ByteBuffersDataOutput();
       CodecUtil.writeHeader(prefix, "FST", FST.VERSION_CURRENT);
       prefix.writeByte((byte) 1);
-      prefix.writeVInt(length);
-      int truncatedLength = Math.toIntExact(prefix.size()) + random().nextInt(length);
+      prefix.writeVInt(numBytes);
+      int truncatedLength = Math.toIntExact(prefix.size()) + random().nextInt(numBytes);
       ByteBuffersDataInput truncated =
           new ByteBuffersDataInput(
               List.of(ByteBuffer.wrap(ArrayUtil.copyOfSubArray(metaBytes, 0, truncatedLength))));
       expectThrows(IOException.class, () -> FST.readMetadata(truncated, outputs));
     }
+    assertTrue(serializedLengths.containsAll(List.of(1023, 1024, 1025, 2048)));
   }
 
   public void testEmptyOutputMetadataNoOutputs() throws Exception {

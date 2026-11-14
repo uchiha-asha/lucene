@@ -65,12 +65,6 @@ public final class FST<T> implements Accountable {
 
   final FSTMetadata<T> metadata;
 
-  /**
-   * Largest empty-string output, in bytes, that {@link #readMetadata} reads into a single array.
-   * Larger outputs are read into 1 KB blocks.
-   */
-  private static final int MAX_EMPTY_OUTPUT_BYTES_ON_HEAP_ARRAY = 1 << 10;
-
   /** Specifies allowed range of each int input label for this FST. */
   public enum INPUT_TYPE {
     BYTE1,
@@ -115,6 +109,13 @@ public final class FST<T> implements Accountable {
 
   // Increment version to change it
   private static final String FILE_FORMAT_NAME = "FST";
+
+  /**
+   * Block size, as a power of two, for reading the empty-string output in {@link #readMetadata}.
+   * Outputs that fit in one block are read into a single exact-size array; larger ones are read
+   * block by block, so a corrupt length cannot trigger a large up-front allocation.
+   */
+  private static final int EMPTY_OUTPUT_BLOCK_BITS = 10;
 
   /** First supported version, this is the version that was used when releasing Lucene 7.0. */
   public static final int VERSION_START = 6;
@@ -471,14 +472,14 @@ public final class FST<T> implements Accountable {
         throw new CorruptIndexException("invalid empty output length " + numBytes, metaIn);
       }
       final BytesReader reader;
-      if (numBytes <= MAX_EMPTY_OUTPUT_BYTES_ON_HEAP_ARRAY) {
+      if (numBytes <= 1 << EMPTY_OUTPUT_BLOCK_BITS) {
         // Small outputs fit in one array: read them directly, without block or copy buffers
         byte[] emptyBytes = new byte[numBytes];
         metaIn.readBytes(emptyBytes, 0, numBytes);
         reader = new ReverseBytesReader(emptyBytes);
       } else {
-        // 1 KB blocks:
-        ReadWriteDataOutput emptyBytes = (ReadWriteDataOutput) getOnHeapReaderWriter(10);
+        ReadWriteDataOutput emptyBytes =
+            (ReadWriteDataOutput) getOnHeapReaderWriter(EMPTY_OUTPUT_BLOCK_BITS);
         emptyBytes.copyBytes(metaIn, numBytes);
         emptyBytes.freeze();
         reader = emptyBytes.getReverseBytesReader();
