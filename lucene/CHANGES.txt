@@ -373,8 +373,8 @@ Optimizations
   IOContext, allowing MMapDirectory to open them with confined areas and avoiding JVM-wide
   handshakes when the files are closed. (Alan Woodward)
 
-* GITHUB#XXXXX: HTMLStripCharFilter starts with a 2,048-char scanner buffer instead of 16,384 chars, so each
-  filtered value allocates about 28 KB less; the buffer still grows for long tags and comments. (Asharam)
+* GITHUB#XXXXX: HTMLStripCharFilter starts with a 2,048-char scanner buffer instead of 16,384
+  chars, so each instance allocates about 28 KB less; the buffer still grows for long tokens. (Asharam)
 
 Bug Fixes
 ---------------------

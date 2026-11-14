@@ -329,8 +329,10 @@ public class TestHTMLStripCharFilter extends BaseTokenStreamTestCase {
       "x <!-- a comment -- with -- dashes --> <p>para</p> <br/> z",
       "x <a href=\"h\" title='t'>link</a> <foo bar=baz\n qux> <?pi x?> z",
       "x <![CDATA[ <kept> & ]]> <script>a<b</script><style>p{}</style> z",
-      "x < y <b <!-- &amp &#xZZ; &#;</ z",
+      "x < y &amp &#xZZ; &#; <b </ <!-- z",
     };
+    assertEquals("x & \uD83D\uDE00 \uD83D\uDE00 <y>  &bogus; z", strip(snippets[0]));
+    assertEquals("x  \npara\n \n z", strip(snippets[2]));
     int boundary = HTMLStripCharFilter.getInitialBufferSize();
     for (String snippet : snippets) {
       String expected = strip(snippet);
