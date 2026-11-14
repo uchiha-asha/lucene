@@ -19,6 +19,7 @@ package org.apache.lucene.search.comparators;
 
 import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.util.NumericUtils;
@@ -77,6 +78,7 @@ public class IntComparator extends NumericComparator<Integer> {
     }
 
     private int getValueForDoc(int doc) throws IOException {
+      NumericDocValues docValues = docValues();
       if (docValues.advanceExact(doc)) {
         return (int) docValues.longValue();
       } else {

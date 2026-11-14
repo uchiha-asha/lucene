@@ -26,6 +26,13 @@ The constructor `HnswGraphSearcher(NeighborQueue, BitSet)` is now
 `VisitedSet`. This interface has the `set`, `getAndSet` and `clear` methods of `BitSet`; create one
 with `VisitedSet.create(expectedVisitedNodes, graphSize)`.
 
+### NumericLeafComparator opens doc values lazily (GITHUB#XXXXX)
+
+The protected field `NumericComparator.NumericLeafComparator#docValues` is replaced by the method
+`docValues()`, which calls `getNumericDocValues` on first use. Subclasses that read the field
+should call `docValues()` instead, and should not expect `getNumericDocValues` to be called from
+the constructor or on segments where no value is read.
+
 ## Migration from Lucene 10.x to Lucene 11.0
 
 ### Deprecated TokenSources methods have been removed (GITHUB#16985)
