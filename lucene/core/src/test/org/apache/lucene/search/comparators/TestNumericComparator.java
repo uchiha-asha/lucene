@@ -17,23 +17,39 @@
 package org.apache.lucene.search.comparators;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FilterDirectoryReader;
+import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Pruning;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 
@@ -262,5 +278,142 @@ public class TestNumericComparator extends LuceneTestCase {
     var leafComparator = comparator1.getLeafComparator(leafContext);
     leafComparator.setScorer(null);
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, leafComparator.competitiveIterator().nextDoc());
+  }
+
+  /**
+   * Numeric doc values are opened on first use, so segments where the query matches nothing do not
+   * open them.
+   */
+  public void testDocValuesOnlyOpenedOnLeavesWithMatches() throws IOException {
+    final int numSegments = TestUtil.nextInt(random(), 3, 6);
+    final int matchingSegment = random().nextInt(numSegments);
+    final boolean isLong = random().nextBoolean();
+    final int indexMode = random().nextInt(3); // 0: points, 1: doc values skipper, 2: doc values
+    final boolean reverse = random().nextBoolean();
+    final List<long[]> expected = new ArrayList<>(); // {globalDoc, value} of matching docs
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter writer =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+        int globalDoc = 0;
+        for (int seg = 0; seg < numSegments; seg++) {
+          int numDocs = TestUtil.nextInt(random(), 20, 100);
+          for (int i = 0; i < numDocs; i++, globalDoc++) {
+            Document doc = new Document();
+            doc.add(new StringField("seg", Integer.toString(seg), Field.Store.NO));
+            boolean missing = random().nextInt(10) == 0;
+            long value = isLong ? random().nextLong() : random().nextInt();
+            if (missing == false) {
+              switch (indexMode) {
+                case 0 -> {
+                  doc.add(new NumericDocValuesField("f", value));
+                  doc.add(isLong ? new LongPoint("f", value) : new IntPoint("f", (int) value));
+                }
+                case 1 -> doc.add(NumericDocValuesField.indexedField("f", value));
+                default -> doc.add(new NumericDocValuesField("f", value));
+              }
+            }
+            writer.addDocument(doc);
+            if (seg == matchingSegment) {
+              long sortValue = missing ? (isLong ? Long.MAX_VALUE : Integer.MAX_VALUE) : value;
+              expected.add(new long[] {globalDoc, sortValue});
+            }
+          }
+          writer.commit();
+        }
+      }
+      try (DirectoryReader in = DirectoryReader.open(dir)) {
+        assertEquals(numSegments, in.leaves().size());
+        AtomicIntegerArray opens = new AtomicIntegerArray(numSegments);
+        DirectoryReader reader = new CountingDirectoryReader(in, opens);
+        IndexSearcher searcher = newSearcher(reader, true, true, false);
+        Object missingValue = isLong ? (Object) Long.MAX_VALUE : (Object) Integer.MAX_VALUE;
+        SortField sortField =
+            new SortField(
+                "f", isLong ? SortField.Type.LONG : SortField.Type.INT, reverse, missingValue);
+        Sort sort = new Sort(sortField);
+        Query query = new TermQuery(new Term("seg", Integer.toString(matchingSegment)));
+        int n = TestUtil.nextInt(random(), 1, 10);
+
+        expected.sort(
+            (a, b) -> {
+              int cmp = Long.compare(a[1], b[1]);
+              return cmp != 0 ? (reverse ? -cmp : cmp) : Long.compare(a[0], b[0]);
+            });
+        TopDocs topDocs = searcher.search(query, n, sort);
+        assertHits(expected, 0, n, topDocs);
+
+        int afterIndex = random().nextInt(expected.size());
+        long[] after = expected.get(afterIndex);
+        Object afterValue = isLong ? (Object) after[1] : (Object) (int) after[1];
+        topDocs =
+            searcher.searchAfter(
+                new FieldDoc((int) after[0], Float.NaN, new Object[] {afterValue}), query, n, sort);
+        assertHits(expected, afterIndex + 1, n, topDocs);
+
+        for (int seg = 0; seg < numSegments; seg++) {
+          if (seg == matchingSegment) {
+            assertTrue(opens.get(seg) > 0);
+          } else {
+            assertEquals("segment " + seg, 0, opens.get(seg));
+          }
+        }
+      }
+    }
+  }
+
+  private static void assertHits(List<long[]> expected, int from, int n, TopDocs topDocs) {
+    int to = Math.min(expected.size(), from + n);
+    assertEquals(to - from, topDocs.scoreDocs.length);
+    for (int i = from; i < to; i++) {
+      FieldDoc hit = (FieldDoc) topDocs.scoreDocs[i - from];
+      assertEquals(expected.get(i)[0], hit.doc);
+      assertEquals(expected.get(i)[1], ((Number) hit.fields[0]).longValue());
+    }
+  }
+
+  /** Counts {@link LeafReader#getNumericDocValues} calls per segment. */
+  private static class CountingDirectoryReader extends FilterDirectoryReader {
+    private final AtomicIntegerArray opens;
+
+    CountingDirectoryReader(DirectoryReader in, AtomicIntegerArray opens) throws IOException {
+      super(
+          in,
+          new SubReaderWrapper() {
+            int ord = 0;
+
+            @Override
+            public LeafReader wrap(LeafReader reader) {
+              final int leafOrd = ord++;
+              return new FilterLeafReader(reader) {
+                @Override
+                public NumericDocValues getNumericDocValues(String field) throws IOException {
+                  opens.incrementAndGet(leafOrd);
+                  return super.getNumericDocValues(field);
+                }
+
+                @Override
+                public CacheHelper getCoreCacheHelper() {
+                  return null;
+                }
+
+                @Override
+                public CacheHelper getReaderCacheHelper() {
+                  return null;
+                }
+              };
+            }
+          });
+      this.opens = opens;
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new CountingDirectoryReader(in, opens);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return null;
+    }
   }
 }

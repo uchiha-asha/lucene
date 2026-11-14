@@ -18,6 +18,7 @@
 package org.apache.lucene.search.comparators;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesSkipper;
 import org.apache.lucene.index.FieldInfo;
@@ -33,6 +34,7 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SkipBlockRangeIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IntsRef;
 
 /**
@@ -91,7 +93,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
     public NumericLeafComparator(LeafReaderContext context) throws IOException {
       this.context = context;
-      this.docValues = getNumericDocValues(context, field);
+      // Opened on first use: a leaf collector is created for every segment, including segments
+      // where the query matches no documents and no sort value is ever read.
+      this.docValues = new LazyNumericDocValues(() -> getNumericDocValues(context, field));
       this.competitiveDISIBuilder = buildCompetitiveDISIBuilder();
     }
 
@@ -113,6 +117,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
     /**
      * Retrieves the NumericDocValues for the field in this segment
+     *
+     * <p>This is called when a value is first read from {@link #docValues}, not when the leaf
+     * comparator is created, so it is not called at all for segments without matches.
      *
      * <p>If you override this method, you should probably always disable skipping as the comparator
      * uses values from the points index to build its competitive iterators, and assumes that the
@@ -166,6 +173,60 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     protected abstract long bottomAsComparableLong();
 
     protected abstract long topAsComparableLong();
+  }
+
+  /**
+   * {@link NumericDocValues} that opens the underlying instance when it is first positioned or
+   * read, so that segments that never compare or copy a value do not pay for opening doc values.
+   */
+  private static final class LazyNumericDocValues extends NumericDocValues {
+    private final IOSupplier<NumericDocValues> supplier;
+    private NumericDocValues in;
+
+    LazyNumericDocValues(IOSupplier<NumericDocValues> supplier) {
+      this.supplier = supplier;
+    }
+
+    private NumericDocValues in() throws IOException {
+      if (in == null) {
+        in = supplier.get();
+      }
+      return in;
+    }
+
+    @Override
+    public long longValue() throws IOException {
+      return in().longValue();
+    }
+
+    @Override
+    public boolean advanceExact(int target) throws IOException {
+      return in().advanceExact(target);
+    }
+
+    @Override
+    public int docID() {
+      return in == null ? -1 : in.docID();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return in().nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return in().advance(target);
+    }
+
+    @Override
+    public long cost() {
+      try {
+        return in().cost();
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
   }
 
   /** Constructs a competitive iterator which can be updated during collection */

@@ -373,6 +373,9 @@ Optimizations
   IOContext, allowing MMapDirectory to open them with confined areas and avoiding JVM-wide
   handshakes when the files are closed. (Alan Woodward)
 
+* GITHUB#XXXXX: Numeric sort comparators open doc values on the first value read instead of
+  when the leaf comparator is created, so segments without matches no longer open them. (Asharam)
+
 Bug Fixes
 ---------------------
 * GITHUB#16983: UnifiedHighlighter.Builder#withFlags is no longer ignored when building the
