@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,8 +44,10 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -56,6 +59,8 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -70,6 +75,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.tests.util.fst.FSTTester;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
@@ -1241,6 +1247,77 @@ public class TestFSTs extends LuceneTestCase {
     assertEquals(22L, Util.get(loadedFST, Util.toIntsRef(newBytesRef("aab"), scratch)).longValue());
     assertEquals(7L, Util.get(loadedFST, Util.toIntsRef(newBytesRef("aac"), scratch)).longValue());
     assertEquals(17L, Util.get(loadedFST, Util.toIntsRef(newBytesRef("ax"), scratch)).longValue());
+  }
+
+  public void testEmptyOutputMetadataRoundTrip() throws Exception {
+    ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
+    for (int length : new int[] {1, 2, 1023, 1024, 1025, 2048, 2049, 5000}) {
+      byte[] bytes = new byte[length];
+      random().nextBytes(bytes);
+      BytesRef emptyOutput = new BytesRef(bytes);
+
+      FSTCompiler<BytesRef> fstCompiler =
+          new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs).build();
+      IntsRefBuilder scratch = new IntsRefBuilder();
+      fstCompiler.add(Util.toIntsRef(new BytesRef(), scratch), emptyOutput);
+      fstCompiler.add(Util.toIntsRef(newBytesRef("a"), scratch), newBytesRef("x"));
+      FST<BytesRef> fst = FST.fromFSTReader(fstCompiler.compile(), fstCompiler.getFSTReader());
+
+      ByteBuffersDataOutput metaOut = new ByteBuffersDataOutput();
+      ByteBuffersDataOutput dataOut = new ByteBuffersDataOutput();
+      fst.save(metaOut, dataOut);
+      byte[] metaBytes = metaOut.toArrayCopy();
+
+      FST.FSTMetadata<BytesRef> metadata =
+          FST.readMetadata(new ByteArrayDataInput(metaBytes), outputs);
+      assertEquals("length=" + length, emptyOutput, metadata.getEmptyOutput());
+      FST<BytesRef> loaded = new FST<>(metadata, dataOut.toDataInput());
+      assertEquals(emptyOutput, Util.get(loaded, new BytesRef()));
+      assertEquals(newBytesRef("x"), Util.get(loaded, newBytesRef("a")));
+
+      // header, accepts-empty byte, vInt length, then the empty output: cut inside the output
+      ByteBuffersDataOutput prefix = new ByteBuffersDataOutput();
+      CodecUtil.writeHeader(prefix, "FST", FST.VERSION_CURRENT);
+      prefix.writeByte((byte) 1);
+      prefix.writeVInt(length);
+      int truncatedLength = Math.toIntExact(prefix.size()) + random().nextInt(length);
+      ByteBuffersDataInput truncated =
+          new ByteBuffersDataInput(
+              List.of(ByteBuffer.wrap(ArrayUtil.copyOfSubArray(metaBytes, 0, truncatedLength))));
+      expectThrows(IOException.class, () -> FST.readMetadata(truncated, outputs));
+    }
+  }
+
+  public void testEmptyOutputMetadataNoOutputs() throws Exception {
+    NoOutputs outputs = NoOutputs.getSingleton();
+    Object nothing = outputs.getNoOutput();
+    FSTCompiler<Object> fstCompiler =
+        new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs).build();
+    IntsRefBuilder scratch = new IntsRefBuilder();
+    fstCompiler.add(Util.toIntsRef(new BytesRef(), scratch), nothing);
+    fstCompiler.add(Util.toIntsRef(newBytesRef("a"), scratch), nothing);
+    FST<Object> fst = FST.fromFSTReader(fstCompiler.compile(), fstCompiler.getFSTReader());
+
+    ByteBuffersDataOutput metaOut = new ByteBuffersDataOutput();
+    ByteBuffersDataOutput dataOut = new ByteBuffersDataOutput();
+    fst.save(metaOut, dataOut);
+
+    FST.FSTMetadata<Object> metadata = FST.readMetadata(metaOut.toDataInput(), outputs);
+    assertSame(nothing, metadata.getEmptyOutput());
+    FST<Object> loaded = new FST<>(metadata, dataOut.toDataInput());
+    assertSame(nothing, Util.get(loaded, new BytesRef()));
+    assertSame(nothing, Util.get(loaded, newBytesRef("a")));
+    assertNull(Util.get(loaded, newBytesRef("b")));
+  }
+
+  public void testEmptyOutputMetadataNegativeLength() throws Exception {
+    ByteBuffersDataOutput metaOut = new ByteBuffersDataOutput();
+    CodecUtil.writeHeader(metaOut, "FST", FST.VERSION_CURRENT);
+    metaOut.writeByte((byte) 1);
+    metaOut.writeVInt(-1);
+    expectThrows(
+        CorruptIndexException.class,
+        () -> FST.readMetadata(metaOut.toDataInput(), ByteSequenceOutputs.getSingleton()));
   }
 
   // Make sure raw FST can differentiate between final vs

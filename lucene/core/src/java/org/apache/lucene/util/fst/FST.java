@@ -65,6 +65,12 @@ public final class FST<T> implements Accountable {
 
   final FSTMetadata<T> metadata;
 
+  /**
+   * Largest empty-string output, in bytes, that {@link #readMetadata} reads into a single array.
+   * Larger outputs are read into 1 KB blocks.
+   */
+  private static final int MAX_EMPTY_OUTPUT_BYTES_ON_HEAP_ARRAY = 1 << 10;
+
   /** Specifies allowed range of each int input label for this FST. */
   public enum INPUT_TYPE {
     BYTE1,
@@ -460,15 +466,25 @@ public final class FST<T> implements Accountable {
     T emptyOutput;
     if (metaIn.readByte() == 1) {
       // accepts empty string
-      // 1 KB blocks:
-      ReadWriteDataOutput emptyBytes = (ReadWriteDataOutput) getOnHeapReaderWriter(10);
       int numBytes = metaIn.readVInt();
-      emptyBytes.copyBytes(metaIn, numBytes);
-
-      emptyBytes.freeze();
+      if (numBytes < 0) {
+        throw new CorruptIndexException("invalid empty output length " + numBytes, metaIn);
+      }
+      final BytesReader reader;
+      if (numBytes <= MAX_EMPTY_OUTPUT_BYTES_ON_HEAP_ARRAY) {
+        // Small outputs fit in one array: read them directly, without block or copy buffers
+        byte[] emptyBytes = new byte[numBytes];
+        metaIn.readBytes(emptyBytes, 0, numBytes);
+        reader = new ReverseBytesReader(emptyBytes);
+      } else {
+        // 1 KB blocks:
+        ReadWriteDataOutput emptyBytes = (ReadWriteDataOutput) getOnHeapReaderWriter(10);
+        emptyBytes.copyBytes(metaIn, numBytes);
+        emptyBytes.freeze();
+        reader = emptyBytes.getReverseBytesReader();
+      }
 
       // De-serialize empty-string output:
-      BytesReader reader = emptyBytes.getReverseBytesReader();
       // NoOutputs uses 0 bytes when writing its output,
       // so we have to check here else BytesStore gets
       // angry:
