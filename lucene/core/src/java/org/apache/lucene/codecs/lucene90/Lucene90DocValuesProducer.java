@@ -2029,7 +2029,13 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
 
         @Override
         public int nextDoc() throws IOException {
-          return advance(doc + 1);
+          int target = doc + 1;
+          if (target >= maxDoc) {
+            return doc = NO_MORE_DOCS;
+          }
+          // The first document starts at offset zero, the initial value of end.
+          setDoc(target, end);
+          return target;
         }
 
         @Override
@@ -2047,22 +2053,18 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
           if (target >= maxDoc) {
             return doc = NO_MORE_DOCS;
           }
-          setDoc(target);
+          setDoc(target, addresses.get(target));
           return target;
         }
 
         @Override
         public boolean advanceExact(int target) throws IOException {
-          setDoc(target);
+          setDoc(target, addresses.get(target));
           return true;
         }
 
-        private void setDoc(int target) {
-          // Addresses are monotonic: the end address of a doc is the start address of the next
-          // one, so moving to the next doc only requires reading one address instead of two.
-          // `end` is only meaningful once the iterator is positioned: target == doc + 1 also
-          // holds when moving from -1 to 0, so that case must read the start address.
-          start = target == doc + 1 && doc != -1 ? end : addresses.get(target);
+        private void setDoc(int target, long startOffset) {
+          start = startOffset;
           end = addresses.get(target + 1L);
           count = (int) (end - start);
           doc = target;
@@ -2329,16 +2331,12 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
 
           @Override
           public boolean advanceExact(int target) throws IOException {
-            setDoc(target);
+            setDoc(target, addresses.get(target));
             return true;
           }
 
-          private void setDoc(int target) {
-            // Addresses are monotonic: the end address of a doc is the start address of the next
-            // one, so moving to the next doc only requires reading one address instead of two.
-            // `end` is only meaningful once the iterator is positioned: target == doc + 1 also
-            // holds when moving from -1 to 0, so that case must read the start address.
-            curr = target == doc + 1 && doc != -1 ? end : addresses.get(target);
+          private void setDoc(int target, long startOffset) {
+            curr = startOffset;
             end = addresses.get(target + 1L);
             count = (int) (end - curr);
             doc = target;
@@ -2356,7 +2354,13 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
 
           @Override
           public int nextDoc() throws IOException {
-            return advance(doc + 1);
+            int target = doc + 1;
+            if (target >= maxDoc) {
+              return doc = NO_MORE_DOCS;
+            }
+            // The first document starts at offset zero, the initial value of end.
+            setDoc(target, end);
+            return target;
           }
 
           @Override
@@ -2364,7 +2368,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
             if (target >= maxDoc) {
               return doc = NO_MORE_DOCS;
             }
-            setDoc(target);
+            setDoc(target, addresses.get(target));
             return target;
           }
 
