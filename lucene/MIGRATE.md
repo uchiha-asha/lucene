@@ -31,7 +31,9 @@ with `VisitedSet.create(expectedVisitedNodes, graphSize)`.
 The protected field `NumericComparator.NumericLeafComparator#docValues` is replaced by the method
 `docValues()`, which calls `getNumericDocValues` on first use. Subclasses that read the field
 should call `docValues()` instead, and should not expect `getNumericDocValues` to be called from
-the constructor or on segments where no value is read.
+the constructor or on segments where no value is read. As a consequence, sorting on a field whose
+doc values are not numeric now fails when the first hit of a segment is collected, and no longer
+fails for segments or queries without hits.
 
 ## Migration from Lucene 10.x to Lucene 11.0
 

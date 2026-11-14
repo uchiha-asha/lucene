@@ -7,7 +7,8 @@ http://s.apache.org/luceneversions
 
 API Changes
 ---------------------
-(No changes)
+* GITHUB#XXXXX: The protected field NumericComparator.NumericLeafComparator#docValues is replaced
+  by a docValues() method that opens the doc values on first use. (Asharam)
 
 New Features
 ---------------------
@@ -26,8 +27,7 @@ Optimizations
   copied node, which slowed the graph copy by 2.4x to 10x in one benchmark. (Ankur Goel)
 
 * GITHUB#XXXXX: Numeric sort comparators open doc values on the first value read instead of
-  when the leaf comparator is created, so segments without matches no longer open them.
-  NumericLeafComparator#docValues is now a method. (Asharam)
+  when the leaf comparator is created, so segments without matches no longer open them. (Asharam)
 
 Bug Fixes
 ---------------------

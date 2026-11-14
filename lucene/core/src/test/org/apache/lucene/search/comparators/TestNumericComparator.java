@@ -326,7 +326,7 @@ public class TestNumericComparator extends LuceneTestCase {
         assertTrue(in.leaves().size() >= numSegments);
         AtomicIntegerArray opens = new AtomicIntegerArray(in.leaves().size());
         DirectoryReader reader = new CountingDirectoryReader(in, opens);
-        IndexSearcher searcher = newSearcher(reader, true, true, false);
+        IndexSearcher searcher = newSearcher(reader, true, true);
         Object missingValue = isLong ? (Object) Long.MAX_VALUE : (Object) Integer.MAX_VALUE;
         SortField sortField =
             new SortField(
