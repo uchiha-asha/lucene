@@ -73,8 +73,10 @@ import org.openjdk.jmh.annotations.Warmup;
  *       a doc ID set built from points. {@code cluster} is a term whose 1/64th of matching docs are
  *       all adjacent. {@code stride} is a term that matches the first 64 docs, then one doc at the
  *       start of every window of {@code DenseConjunctionBulkScorer.WINDOW_SIZE} docs (4096): a
- *       dense prefix followed by sparse matches at regular intervals. {@code gap} is ignored by
- *       {@code cluster} and {@code stride}.
+ *       dense prefix followed by sparse matches at regular intervals. {@code mixed} matches 1 doc
+ *       in 8 on the first 1/8th of the docs and 1 in 2,000 on the rest. {@code islands} matches
+ *       runs of 1,024 adjacent docs every 262,144 docs. {@code gap} is ignored by all sources but
+ *       {@code postings} and {@code points}.
  *   <li>{@code gap} is the average number of docs between two consecutive matches, i.e. the query
  *       matches one doc out of {@code gap}.
  *   <li>The three benchmark methods differ by what the collector does: a cheap computation per doc,
@@ -96,7 +98,7 @@ public class SparseFilterBulkScorerBenchmark {
   private static final int[] GAPS = {100_000, 10_000, 1_000, 256, 100, 50};
   private static final int POINT_RANGE = 100_000;
 
-  @Param({"postings", "points", "cluster", "stride"})
+  @Param({"postings", "points", "cluster", "stride", "mixed", "islands"})
   String source;
 
   @Param({"100000", "10000", "1000", "256", "100", "50"})
@@ -116,7 +118,7 @@ public class SparseFilterBulkScorerBenchmark {
 
   @Setup(Level.Trial)
   public void setup() throws IOException {
-    path = indexPath("sparseFilter-v2-" + deletedPercent);
+    path = indexPath("sparseFilter-v3-" + deletedPercent);
     dir = MMapDirectory.open(path);
     if (isComplete(path) == false) {
       Random random = new Random(42);
@@ -133,6 +135,16 @@ public class SparseFilterBulkScorerBenchmark {
           }
           if (i < 64 || i % 4096 == 0) {
             doc.add(new StringField("stride", "x", Store.NO));
+          }
+          // Dense on the first 1/8th of the docs (1 in 8), sparse on the rest (1 in 2,000). The
+          // overall density (~1/60) is above 1/128.
+          if (i < NUM_DOCS / 8 ? random.nextInt(8) == 0 : random.nextInt(2000) == 0) {
+            doc.add(new StringField("mixed", "x", Store.NO));
+          }
+          // Runs of 1,024 adjacent docs every 262,144 docs: dense locally, but the overall density
+          // (1/256) is below 1/128.
+          if (i % 262_144 < 1024) {
+            doc.add(new StringField("islands", "x", Store.NO));
           }
           if (random.nextInt(100) < deletedPercent) {
             doc.add(new StringField("deleted", "x", Store.NO));
@@ -164,6 +176,8 @@ public class SparseFilterBulkScorerBenchmark {
           case "points" -> IntPoint.newRangeQuery("point", 0, POINT_RANGE / gap - 1);
           case "cluster" -> new TermQuery(new Term("cluster", "x"));
           case "stride" -> new TermQuery(new Term("stride", "x"));
+          case "mixed" -> new TermQuery(new Term("mixed", "x"));
+          case "islands" -> new TermQuery(new Term("islands", "x"));
           default -> throw new AssertionError(source);
         };
     query = new BooleanQuery.Builder().add(filter, Occur.FILTER).build();
@@ -176,8 +190,10 @@ public class SparseFilterBulkScorerBenchmark {
             .bulkScorer(leaf)
             .getClass()
             .getSimpleName();
-    if (bulkScorer.equals("ConstantScoreBulkScorer") == false) {
-      throw new AssertionError("Expected ConstantScoreBulkScorer, got " + bulkScorer);
+    if (bulkScorer.equals("ConstantScoreBulkScorer") == false
+        && bulkScorer.equals("DefaultBulkScorer") == false) {
+      throw new AssertionError(
+          "Expected ConstantScoreBulkScorer or DefaultBulkScorer, got " + bulkScorer);
     }
   }
 
