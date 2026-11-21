@@ -276,7 +276,8 @@ public final class GeoEncodingUtils {
         final int runMinLon = ((lonBase + start) << lonShift) + Integer.MIN_VALUE;
         final int runMaxLon = ((lonBase + end) << lonShift) + Integer.MIN_VALUE - 1;
         // A definite relation for the entire run applies to every cell in it.
-        // Only test non-wrapping rectangles, as a grid can straddle the dateline.
+        // Only test complete, non-wrapping runs: a crossing run costs an extra call, and a grid
+        // can straddle the dateline.
         if (end - start == GRID_RUN_LENGTH && runMinLon <= runMaxLon) {
           Relation relation =
               boxToRelation.apply(

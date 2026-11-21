@@ -158,7 +158,9 @@ public class TestGeoEncodingUtils extends LuceneTestCase {
   }
 
   public void testGridAgainstPolygonWithHole() {
-    Polygon hole = new Polygon(new double[] {0, 2, 2, 0, 0}, new double[] {0, 0, 2, 2, 0});
+    Polygon hole =
+        new Polygon(
+            new double[] {-2.5, 2.5, 2.5, -2.5, -2.5}, new double[] {-2.5, -2.5, 2.5, 2.5, -2.5});
     Polygon polygon =
         new Polygon(new double[] {-3, -3, 3, 3, -3}, new double[] {-3, 3, 3, -3, -3}, hole);
     Component2D component = LatLonGeometry.create(polygon);
