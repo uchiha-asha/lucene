@@ -31,6 +31,7 @@ import static org.apache.lucene.analysis.wikipedia.WikipediaTokenizer.UNTOKENIZE
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
@@ -44,6 +45,23 @@ import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
 public class TestWikipediaTokenizer extends BaseTokenStreamTestCase {
   protected static final String LINK_PHRASES =
       "click [[link here again]] click [http://lucene.apache.org here again] [[Category:a b c d]]";
+
+  /** An unpaired high surrogate at the end of the input must not drop the text read before it. */
+  public void testTrailingUnpairedHighSurrogate() throws Exception {
+    for (int words : new int[] {1, 1000, 5000}) {
+      String[] expected = new String[words + 1];
+      Arrays.fill(expected, "word");
+      expected[words] = "end";
+      String input = "word ".repeat(words) + "end\uD800";
+      WikipediaTokenizer tokenizer =
+          new WikipediaTokenizer(
+              newAttributeFactory(),
+              WikipediaTokenizer.TOKENS_ONLY,
+              Collections.<String>emptySet());
+      tokenizer.setReader(new StringReader(input));
+      assertTokenStreamContents(tokenizer, expected);
+    }
+  }
 
   public void testSimple() throws Exception {
     String text = "This is a [[Category:foo]]";

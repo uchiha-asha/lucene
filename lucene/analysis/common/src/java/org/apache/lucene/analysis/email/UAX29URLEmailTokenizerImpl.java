@@ -33626,6 +33626,9 @@ public final class UAX29URLEmailTokenizerImpl {
    */
   private boolean zzRefill() throws java.io.IOException {
 
+    /* a high surrogate held back by the previous refill */
+    boolean heldBack = zzFinalHighSurrogate > 0;
+
     /* first: make room (if you can) */
     if (zzStartRead > 0) {
       zzEndRead += zzFinalHighSurrogate;
@@ -33665,7 +33668,9 @@ public final class UAX29URLEmailTokenizerImpl {
         } else {                    // There is room in the buffer for at least one more char
           int c = zzReader.read();  // Expecting to read a paired low surrogate char
           if (c == -1) {
-            return true;
+            // Unpaired high surrogate at the end of the input: the chars read above are new input,
+            // so scan them; the next refill reports the end of the stream.
+            return false;
           } else {
             zzBuffer[zzEndRead++] = (char)c;
           }
@@ -33675,8 +33680,9 @@ public final class UAX29URLEmailTokenizerImpl {
       return false;
     }
 
-    /* numRead < 0 ==> end of stream */
-    return true;
+    /* numRead < 0 ==> end of stream. If a high surrogate held back by the previous refill was put
+       back into the buffer above, it is the last new input: scan it, the next refill reports EOF. */
+    return !(heldBack && zzFinalHighSurrogate == 0);
   }
 
 

@@ -17,6 +17,7 @@
 package org.apache.lucene.analysis.classic;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Arrays;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -50,6 +51,19 @@ public class TestClassicAnalyzer extends BaseTokenStreamTestCase {
   public void tearDown() throws Exception {
     a.close();
     super.tearDown();
+  }
+
+  /** An unpaired high surrogate at the end of the input must not drop the text read before it. */
+  public void testTrailingUnpairedHighSurrogate() throws Exception {
+    for (int words : new int[] {1, 1000, 5000}) {
+      String[] expected = new String[words + 1];
+      Arrays.fill(expected, "word");
+      expected[words] = "end";
+      String input = "word ".repeat(words) + "end\uD800";
+      ClassicTokenizer tokenizer = new ClassicTokenizer(newAttributeFactory());
+      tokenizer.setReader(new StringReader(input));
+      assertTokenStreamContents(tokenizer, expected);
+    }
   }
 
   public void testMaxTermLength() throws Exception {

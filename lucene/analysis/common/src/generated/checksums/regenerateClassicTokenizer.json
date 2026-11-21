@@ -1,5 +1,5 @@
 {
-    "gradle/regenerate/jflex/skeleton.default.txt": "58944f66c9113a940dfaf6a17210ec8219024390",
-    "lucene/analysis/common/src/java/org/apache/lucene/analysis/classic/ClassicTokenizerImpl.java": "5615bd8cb91c9f9ac1fcf97fe946a075e5931086",
+    "gradle/regenerate/jflex/skeleton.default.txt": "7bea748688563cef2abfe1af0eb35c2576401870",
+    "lucene/analysis/common/src/java/org/apache/lucene/analysis/classic/ClassicTokenizerImpl.java": "16f3b61d2828b83b71086fdc347169b07aba0fba",
     "lucene/analysis/common/src/java/org/apache/lucene/analysis/classic/ClassicTokenizerImpl.jflex": "db33fb08d340110cfa1d71299898b8082a0091d8"
 }

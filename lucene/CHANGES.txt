@@ -498,6 +498,9 @@ Bug Fixes
 
 * GITHUB#17018: Fix NPE when a span query searches over masked fields that don't have any indexed docs in them (Simon Cooper)
 
+* GITHUB#XXXXX: Fix JFlex-generated tokenizers and HTMLStripCharFilter dropping the text read
+  last before an unpaired high surrogate at the end of the input. (Asharam)
+
 Changes in Runtime Behavior
 ---------------------
 * GITHUB#14187: The query cache is now disabled by default. (Adrien Grand)

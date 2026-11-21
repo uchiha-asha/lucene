@@ -318,6 +318,38 @@ public class TestHTMLStripCharFilter extends BaseTokenStreamTestCase {
     }
   }
 
+  /**
+   * An unpaired high surrogate at the end of the input must not drop the text read before it. The
+   * lengths put the end of the input before, at and after the initial buffer size; the last input
+   * has a long tag before the end of the input.
+   */
+  public void testTrailingUnpairedHighSurrogate() throws Exception {
+    int bufferSize = HTMLStripCharFilter.getInitialBufferSize();
+    for (int length : new int[] {1, 100, bufferSize - 1, bufferSize + 100, 3 * bufferSize}) {
+      String text = "x".repeat(length) + '\uD800';
+      assertEquals("length=" + length, text, stripTrailingSurrogateInput(text));
+      assertEquals(
+          "length=" + length, "b " + text, stripTrailingSurrogateInput("<b>b</b> " + text));
+    }
+    String longAttribute =
+        "a".repeat(1024) + "<a title='" + "t".repeat(1500) + "'>" + "x".repeat(13847) + '\uD800';
+    assertEquals(
+        "a".repeat(1024) + "x".repeat(13847) + '\uD800',
+        stripTrailingSurrogateInput(longAttribute));
+  }
+
+  private static String stripTrailingSurrogateInput(String input) throws IOException {
+    StringBuilder builder = new StringBuilder();
+    try (Reader reader = new HTMLStripCharFilter(new StringReader(input))) {
+      char[] buffer = new char[37];
+      int n;
+      while ((n = reader.read(buffer, 0, buffer.length)) != -1) {
+        builder.append(buffer, 0, n);
+      }
+    }
+    return builder.toString();
+  }
+
   public void testComment() throws Exception {
     String test = "<!--- three dashes, still a valid comment ---> ";
     String gold = " ";
