@@ -161,6 +161,12 @@ class OverlappingLongRangeCounter extends LongRangeCounter {
   @Override
   protected void processMultiValuedHit(int elementaryIntervalNum) {
     assert multiValuedDocElementaryIntervalHits != null : "must call startDoc() first";
+    // rollupMultiValued relies on strictly ascending hits, which addMultiValued guarantees.
+    assert multiValuedDocElementaryIntervalHits.isEmpty()
+            || multiValuedDocElementaryIntervalHits.get(
+                    multiValuedDocElementaryIntervalHits.size() - 1)
+                < elementaryIntervalNum
+        : "hits must be strictly ascending";
     multiValuedDocElementaryIntervalHits.add(elementaryIntervalNum);
   }
 
