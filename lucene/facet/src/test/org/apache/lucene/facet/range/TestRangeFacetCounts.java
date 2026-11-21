@@ -70,6 +70,41 @@ import org.apache.lucene.util.NumericUtils;
 
 public class TestRangeFacetCounts extends FacetTestCase {
 
+  public void testSparseAndDenseMultiValueRangeRollup() {
+    LongRange[] ranges = new LongRange[128];
+    for (int i = 0; i < ranges.length; i++) {
+      ranges[i] = new LongRange("r" + i, i, true, i + 6, true);
+    }
+
+    int[] actual = new int[ranges.length];
+    int[] expected = new int[ranges.length];
+    LongRangeCounter counter = LongRangeCounter.create(ranges, actual);
+    for (int doc = 0; doc < 100; doc++) {
+      long[] values = new long[doc % 2 == 0 ? 2 : 128];
+      for (int i = 0; i < values.length; i++) {
+        values[i] = random().nextInt(256) - 64;
+      }
+      Arrays.sort(values);
+      counter.startMultiValuedDoc();
+      for (long value : values) {
+        counter.addMultiValued(value);
+      }
+      boolean matched = false;
+      for (int i = 0; i < ranges.length; i++) {
+        for (long value : values) {
+          if (ranges[i].accept(value)) {
+            expected[i]++;
+            matched = true;
+            break;
+          }
+        }
+      }
+      assertEquals(matched, counter.endMultiValuedDoc());
+    }
+    assertEquals(0, counter.finish());
+    assertArrayEquals(expected, actual);
+  }
+
   public void testBasicLong() throws Exception {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);

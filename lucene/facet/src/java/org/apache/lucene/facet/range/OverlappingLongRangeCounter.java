@@ -50,8 +50,8 @@ class OverlappingLongRangeCounter extends LongRangeCounter {
   private int[] singleValuedElementaryIntervalCounts;
 
   // Needed only for counting multi-valued docs:
-  /** whether-or-not an elementary interval has seen at least one match for a single doc */
-  private FixedBitSet multiValuedDocElementaryIntervalHits;
+  /** Distinct elementary intervals for one document, in ascending order. */
+  private IntArrayList multiValuedDocElementaryIntervalHits;
 
   /** whether-or-not a requested range has seen at least one match for a single doc */
   private FixedBitSet multiValuedDocRangeHits;
@@ -86,9 +86,9 @@ class OverlappingLongRangeCounter extends LongRangeCounter {
   @Override
   void startMultiValuedDoc() {
     super.startMultiValuedDoc();
-    // Lazy init a bitset to track the elementary intervals we see of a multi-valued doc:
+    // Allocate only when counting a multi-valued document:
     if (multiValuedDocElementaryIntervalHits == null) {
-      multiValuedDocElementaryIntervalHits = new FixedBitSet(boundaries.length);
+      multiValuedDocElementaryIntervalHits = new IntArrayList();
     } else {
       multiValuedDocElementaryIntervalHits.clear();
     }
@@ -161,7 +161,7 @@ class OverlappingLongRangeCounter extends LongRangeCounter {
   @Override
   protected void processMultiValuedHit(int elementaryIntervalNum) {
     assert multiValuedDocElementaryIntervalHits != null : "must call startDoc() first";
-    multiValuedDocElementaryIntervalHits.set(elementaryIntervalNum);
+    multiValuedDocElementaryIntervalHits.add(elementaryIntervalNum);
   }
 
   private static LongRangeNode split(int start, int end, List<InclusiveRange> elementaryIntervals) {
@@ -215,23 +215,25 @@ class OverlappingLongRangeCounter extends LongRangeCounter {
    * that counts don't get double-counted, and so we know whether-or-not an individual doc actually
    * contributed to any of the user-requested ranges.
    */
-  private boolean rollupMultiValued(LongRangeNode node) {
-    boolean containedHit;
-    if (node.left != null) {
-      containedHit = rollupMultiValued(node.left);
-      containedHit |= rollupMultiValued(node.right);
-    } else {
-      // Leaf:
-      containedHit = multiValuedDocElementaryIntervalHits.get(elementaryIntervalUpto);
-      elementaryIntervalUpto++;
+  private void rollupMultiValued(LongRangeNode node) {
+    // Earlier leaves have already been consumed by the in-order traversal.
+    if (elementaryIntervalUpto == multiValuedDocElementaryIntervalHits.size()
+        || boundaries[multiValuedDocElementaryIntervalHits.get(elementaryIntervalUpto)]
+            > node.end) {
+      return;
     }
-    if (containedHit && node.outputs != null) {
+
+    if (node.outputs != null) {
       for (IntCursor rangeIndex : node.outputs) {
         multiValuedDocRangeHits.set(rangeIndex.value);
       }
     }
-
-    return containedHit;
+    if (node.left == null) {
+      elementaryIntervalUpto++;
+    } else {
+      rollupMultiValued(node.left);
+      rollupMultiValued(node.right);
+    }
   }
 
   private static List<InclusiveRange> buildElementaryIntervals(LongRange[] ranges) {

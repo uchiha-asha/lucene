@@ -402,6 +402,9 @@ Optimizations
 
 * GITHUB#16757: Speed up building cached bit sets in LRUQueryCache. (Ke Wei)
 
+* GITHUB#XXXXX: Multi-valued range facet counting rolls up only the tree branches that a document's
+  values hit, instead of visiting every elementary interval per document. (Asharam)
+
 Bug Fixes
 ---------------------
 * GITHUB#17020: Reduce CachingTokenFilter memory use by not copying stale term bytes in
