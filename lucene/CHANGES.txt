@@ -498,8 +498,10 @@ Bug Fixes
 
 * GITHUB#17018: Fix NPE when a span query searches over masked fields that don't have any indexed docs in them (Simon Cooper)
 
-* GITHUB#XXXXX: Fix JFlex-generated tokenizers and HTMLStripCharFilter dropping the text read
-  last before an unpaired high surrogate at the end of the input. (Asharam)
+* GITHUB#XXXXX: Fix StandardTokenizer, UAX29URLEmailTokenizer, ClassicTokenizer, WikipediaTokenizer
+  and HTMLStripCharFilter dropping trailing text (up to a whole buffer) when the input ends with
+  an unpaired high surrogate, and fix an IndexOutOfBoundsException in ClassicTokenizer,
+  WikipediaTokenizer and HTMLStripCharFilter when a read returns a single high surrogate. (Asharam)
 
 Changes in Runtime Behavior
 ---------------------

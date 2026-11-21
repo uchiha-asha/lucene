@@ -29,6 +29,7 @@ import static org.apache.lucene.analysis.wikipedia.WikipediaTokenizer.ITALICS;
 import static org.apache.lucene.analysis.wikipedia.WikipediaTokenizer.SUB_HEADING;
 import static org.apache.lucene.analysis.wikipedia.WikipediaTokenizer.UNTOKENIZED_TOKEN_FLAG;
 
+import java.io.FilterReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Arrays;
@@ -46,7 +47,10 @@ public class TestWikipediaTokenizer extends BaseTokenStreamTestCase {
   protected static final String LINK_PHRASES =
       "click [[link here again]] click [http://lucene.apache.org here again] [[Category:a b c d]]";
 
-  /** An unpaired high surrogate at the end of the input must not drop the text read before it. */
+  /**
+   * An unpaired high surrogate at the end of the input must not drop the text read before it, nor
+   * the final offset of the surrogate itself.
+   */
   public void testTrailingUnpairedHighSurrogate() throws Exception {
     for (int words : new int[] {1, 1000, 5000}) {
       String[] expected = new String[words + 1];
@@ -59,8 +63,41 @@ public class TestWikipediaTokenizer extends BaseTokenStreamTestCase {
               WikipediaTokenizer.TOKENS_ONLY,
               Collections.<String>emptySet());
       tokenizer.setReader(new StringReader(input));
-      assertTokenStreamContents(tokenizer, expected);
+      assertTokenStreamContents(tokenizer, expected, null, null, input.length());
     }
+    // the first read fills the buffer exactly, so the scanner holds the surrogate back
+    String input = "x" + " ".repeat(4096 - 2) + "\uD800";
+    WikipediaTokenizer tokenizer =
+        new WikipediaTokenizer(
+            newAttributeFactory(), WikipediaTokenizer.TOKENS_ONLY, Collections.<String>emptySet());
+    tokenizer.setReader(new StringReader(input));
+    assertTokenStreamContents(tokenizer, new String[] {"x"}, null, null, input.length());
+  }
+
+  /**
+   * A short read leaves one free slot at the end of the buffer, and the next read puts a high
+   * surrogate in it while a token still starts at the beginning of the buffer.
+   */
+  public void testSingleCharReadOfHighSurrogate() throws Exception {
+    String input = "a".repeat(4095) + "\uD83D\uDE00 b";
+    WikipediaTokenizer tokenizer =
+        new WikipediaTokenizer(
+            newAttributeFactory(), WikipediaTokenizer.TOKENS_ONLY, Collections.<String>emptySet());
+    tokenizer.setReader(
+        new FilterReader(new StringReader(input)) {
+          boolean first = true;
+
+          @Override
+          public int read(char[] cbuf, int off, int len) throws IOException {
+            if (first) {
+              first = false;
+              len = Math.min(len, 4095);
+            }
+            return super.read(cbuf, off, len);
+          }
+        });
+    assertTokenStreamContents(
+        tokenizer, new String[] {"a".repeat(4095), "b"}, null, null, input.length());
   }
 
   public void testSimple() throws Exception {

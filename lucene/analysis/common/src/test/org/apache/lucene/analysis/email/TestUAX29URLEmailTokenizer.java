@@ -90,7 +90,10 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.assertTokenStreamContents(tokenizer, new String[] {"testing", "1234"});
   }
 
-  /** An unpaired high surrogate at the end of the input must not drop the text read before it. */
+  /**
+   * An unpaired high surrogate at the end of the input must not drop the text read before it, nor
+   * the final offset of the surrogate itself.
+   */
   public void testTrailingUnpairedHighSurrogate() throws Exception {
     for (int words : new int[] {1, 1000, 5000}) {
       String[] expected = new String[words + 1];
@@ -99,8 +102,13 @@ public class TestUAX29URLEmailTokenizer extends BaseTokenStreamTestCase {
       String input = "word ".repeat(words) + "end\uD800";
       UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
       tokenizer.setReader(new StringReader(input));
-      assertTokenStreamContents(tokenizer, expected);
+      assertTokenStreamContents(tokenizer, expected, null, null, input.length());
     }
+    // the first read fills the buffer exactly, so the scanner holds the surrogate back
+    String input = "x" + " ".repeat(255 - 2) + "\uD800";
+    UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(newAttributeFactory());
+    tokenizer.setReader(new StringReader(input));
+    assertTokenStreamContents(tokenizer, new String[] {"x"}, null, null, input.length());
   }
 
   private Analyzer a, urlAnalyzer, emailAnalyzer;

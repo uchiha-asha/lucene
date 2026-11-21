@@ -462,13 +462,13 @@ class ClassicTokenizerImpl {
    */
   private boolean zzRefill() throws java.io.IOException {
 
-    /* a high surrogate held back by the previous refill */
+    /* a high surrogate held back by the previous refill is part of the input again */
     boolean heldBack = zzFinalHighSurrogate > 0;
+    zzEndRead += zzFinalHighSurrogate;
+    zzFinalHighSurrogate = 0;
 
     /* first: make room (if you can) */
     if (zzStartRead > 0) {
-      zzEndRead += zzFinalHighSurrogate;
-      zzFinalHighSurrogate = 0;
       System.arraycopy(zzBuffer, zzStartRead, zzBuffer, 0, zzEndRead - zzStartRead);
 
       /* translate stored positions */
@@ -479,13 +479,11 @@ class ClassicTokenizerImpl {
     }
 
     /* is the buffer big enough? */
-    if (zzCurrentPos >= zzBuffer.length - zzFinalHighSurrogate) {
+    if (zzEndRead >= zzBuffer.length) {
       /* if not: blow it up */
       char newBuffer[] = new char[zzBuffer.length * 2];
       System.arraycopy(zzBuffer, 0, newBuffer, 0, zzBuffer.length);
       zzBuffer = newBuffer;
-      zzEndRead += zzFinalHighSurrogate;
-      zzFinalHighSurrogate = 0;
     }
 
     /* fill the buffer with new input */
@@ -500,27 +498,21 @@ class ClassicTokenizerImpl {
     if (numRead > 0) {
       zzEndRead += numRead;
       if (Character.isHighSurrogate(zzBuffer[zzEndRead - 1])) {
-        if (numRead == requested) { // We requested too few chars to encode a full Unicode character
-          --zzEndRead;
-          zzFinalHighSurrogate = 1;
-        } else { // There is room in the buffer for at least one more char
-          int c = zzReader.read(); // Expecting to read a paired low surrogate char
-          if (c == -1) {
-            // Unpaired high surrogate at the end of the input: the chars read above are new input,
-            // so scan them; the next refill reports the end of the stream.
-            return false;
-          } else {
-            zzBuffer[zzEndRead++] = (char) c;
-          }
+        /* might be half of a character. Hold it back until the next refill has read more */
+        --zzEndRead;
+        zzFinalHighSurrogate = 1;
+        if (numRead == 1 && !heldBack) {
+          /* Get more input. The recursion can only be one level deep, because of !heldBack. */
+          return zzRefill();
         }
       }
       /* potentially more input available */
       return false;
     }
 
-    /* numRead < 0 ==> end of stream. If a high surrogate held back by the previous refill was put
-    back into the buffer above, it is the last new input: scan it, the next refill reports EOF. */
-    return !(heldBack && zzFinalHighSurrogate == 0);
+    /* When we get here, numRead is < 0 and the reader is at the end of the stream. If the previous
+    refill held back a high surrogate, that high surrogate is now a single last new input. */
+    return !heldBack;
   }
 
   /**

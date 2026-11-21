@@ -133,9 +133,10 @@
       return false;
     }
 
-    /* numRead < 0 ==> end of stream. If a high surrogate held back by the previous refill was put
-       back into the buffer above, it is the last new input: scan it, the next refill reports EOF. */
-    return !(heldBack && zzFinalHighSurrogate == 0);
+    /* numRead < 0 ==> end of stream. A high surrogate is only held back when the buffer is full, so
+       if the previous refill held one back, "make room" above put it back into the buffer (otherwise
+       requested was 0). It is the last new input: scan it, the next refill reports EOF. */
+    return !heldBack;
   }
 
 
