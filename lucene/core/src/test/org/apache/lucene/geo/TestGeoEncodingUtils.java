@@ -32,6 +32,7 @@ import java.util.Random;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.SloppyMath;
 
 /** Tests methods in {@link GeoEncodingUtils} */
 public class TestGeoEncodingUtils extends LuceneTestCase {
@@ -133,6 +134,40 @@ public class TestGeoEncodingUtils extends LuceneTestCase {
           assertEquals(encoded + 1, encodeLongitudeCeil(value));
         }
       }
+    }
+  }
+
+  public void testGridAgainstDirectDistanceAcrossDateline() {
+    for (int i = 0; i < 10; i++) {
+      double centerLat = -80 + random().nextDouble() * 160;
+      double centerLon = random().nextBoolean() ? 179.99 : -179.99;
+      double radius = 10_000 + random().nextDouble() * 1_000_000;
+      double distanceKey = GeoUtils.distanceQuerySortKey(radius);
+      var predicate = GeoEncodingUtils.createDistancePredicate(centerLat, centerLon, radius);
+      for (int j = 0; j < 1_000; j++) {
+        double lon = (random().nextBoolean() ? 1 : -1) * (180 - random().nextDouble() * 20);
+        int encodedLat = encodeLatitude(centerLat + random().nextDouble() * 20 - 10);
+        int encodedLon = encodeLongitude(lon);
+        assertEquals(
+            SloppyMath.haversinSortKey(
+                    decodeLatitude(encodedLat), decodeLongitude(encodedLon), centerLat, centerLon)
+                <= distanceKey,
+            predicate.test(encodedLat, encodedLon));
+      }
+    }
+  }
+
+  public void testGridAgainstPolygonWithHole() {
+    Polygon hole = new Polygon(new double[] {0, 2, 2, 0, 0}, new double[] {0, 0, 2, 2, 0});
+    Polygon polygon =
+        new Polygon(new double[] {-3, -3, 3, 3, -3}, new double[] {-3, 3, 3, -3, -3}, hole);
+    Component2D component = LatLonGeometry.create(polygon);
+    var predicate = GeoEncodingUtils.createComponentPredicate(component);
+    for (int i = 0; i < 5_000; i++) {
+      int lat = encodeLatitude(random().nextDouble() * 8 - 4);
+      int lon = encodeLongitude(random().nextDouble() * 8 - 4);
+      assertEquals(
+          component.contains(decodeLongitude(lon), decodeLatitude(lat)), predicate.test(lat, lon));
     }
   }
 

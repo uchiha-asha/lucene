@@ -402,6 +402,9 @@ Optimizations
 
 * GITHUB#16757: Speed up building cached bit sets in LRUQueryCache. (Ke Wei)
 
+* GITHUB#XXXXX: Point polygon and distance predicates classify runs of eight grid cells with one
+  relation call when the whole run is inside or outside, making query setup cheaper. (Asharam)
+
 Bug Fixes
 ---------------------
 * GITHUB#17020: Reduce CachingTokenFilter memory use by not copying stale term bytes in

@@ -23,6 +23,7 @@ import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.checkLatitude;
 import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 
+import java.util.Arrays;
 import java.util.function.Function;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
@@ -36,6 +37,8 @@ import org.apache.lucene.util.SloppyMath;
 public final class GeoEncodingUtils {
   /** number of bits used for quantizing latitude and longitude values */
   public static final short BITS = 32;
+
+  private static final int GRID_RUN_LENGTH = 8;
 
   private static final double LAT_SCALE = (0x1L << BITS) / 180.0D;
   private static final double LAT_DECODE = 1 / LAT_SCALE;
@@ -264,20 +267,37 @@ public final class GeoEncodingUtils {
 
     final byte[] relations = new byte[maxLatDelta * maxLonDelta];
     for (int i = 0; i < maxLatDelta; ++i) {
-      for (int j = 0; j < maxLonDelta; ++j) {
-        final int boxMinLat = ((latBase + i) << latShift) + Integer.MIN_VALUE;
-        final int boxMinLon = ((lonBase + j) << lonShift) + Integer.MIN_VALUE;
-        final int boxMaxLat = boxMinLat + (1 << latShift) - 1;
-        final int boxMaxLon = boxMinLon + (1 << lonShift) - 1;
-
-        relations[i * maxLonDelta + j] =
-            (byte)
-                boxToRelation
-                    .apply(
-                        new Rectangle(
-                            decodeLatitude(boxMinLat), decodeLatitude(boxMaxLat),
-                            decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon)))
-                    .ordinal();
+      final int boxMinLat = ((latBase + i) << latShift) + Integer.MIN_VALUE;
+      final double minY = decodeLatitude(boxMinLat);
+      final double maxY = decodeLatitude(boxMinLat + (1 << latShift) - 1);
+      final int row = i * maxLonDelta;
+      for (int start = 0; start < maxLonDelta; start += GRID_RUN_LENGTH) {
+        final int end = Math.min(start + GRID_RUN_LENGTH, maxLonDelta);
+        final int runMinLon = ((lonBase + start) << lonShift) + Integer.MIN_VALUE;
+        final int runMaxLon = ((lonBase + end) << lonShift) + Integer.MIN_VALUE - 1;
+        // A definite relation for the entire run applies to every cell in it.
+        // Only test non-wrapping rectangles, as a grid can straddle the dateline.
+        if (end - start == GRID_RUN_LENGTH && runMinLon <= runMaxLon) {
+          Relation relation =
+              boxToRelation.apply(
+                  new Rectangle(
+                      minY, maxY, decodeLongitude(runMinLon), decodeLongitude(runMaxLon)));
+          if (relation != Relation.CELL_CROSSES_QUERY) {
+            Arrays.fill(relations, row + start, row + end, (byte) relation.ordinal());
+            continue;
+          }
+        }
+        for (int j = start; j < end; ++j) {
+          final int boxMinLon = ((lonBase + j) << lonShift) + Integer.MIN_VALUE;
+          final int boxMaxLon = boxMinLon + (1 << lonShift) - 1;
+          relations[row + j] =
+              (byte)
+                  boxToRelation
+                      .apply(
+                          new Rectangle(
+                              minY, maxY, decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon)))
+                      .ordinal();
+        }
       }
     }
 
