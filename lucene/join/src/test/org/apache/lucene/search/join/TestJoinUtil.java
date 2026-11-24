@@ -582,6 +582,23 @@ public class TestJoinUtil extends LuceneTestCase {
     }
   }
 
+  public void testSingleCollectorManager() {
+    for (ScoreMode mode : ScoreMode.values()) {
+      GlobalOrdinalsWithScoreCollectorManager single =
+          new GlobalOrdinalsWithScoreCollectorManager(
+              "key", null, 10, mode, 0, Integer.MAX_VALUE, true);
+      assertNull(single.locks);
+      single.newCollector();
+      expectThrows(IllegalStateException.class, single::newCollector);
+
+      GlobalOrdinalsWithScoreCollectorManager concurrent =
+          new GlobalOrdinalsWithScoreCollectorManager(
+              "key", null, 10, mode, 0, Integer.MAX_VALUE, false);
+      concurrent.newCollector();
+      concurrent.newCollector();
+    }
+  }
+
   public void testMinMaxScore() throws Exception {
     String priceField = "price";
     Query priceQuery = numericDocValuesScoreQuery(priceField);

@@ -46,15 +46,22 @@ class GlobalOrdinalsWithScoreCollectorManager implements CollectorManager<Collec
   // become immutable when we can have any number of concurrent readers. Locks are per-block and
   // guard the match bits, scores and occurrence counts of that block together. Several slices can
   // collect concurrently, including different partitions of the same segment, so this is needed
-  // with or without an ordinal map.
+  // with or without an ordinal map. It is null when a single collector does all the collection.
   final Lock[] locks;
+  private boolean collectorCreated;
 
   // also written concurrently
   protected final Scores scores;
   protected final Occurrences occurrences;
 
   GlobalOrdinalsWithScoreCollectorManager(
-      String field, OrdinalMap ordinalMap, long valueCount, ScoreMode scoreMode, int min, int max) {
+      String field,
+      OrdinalMap ordinalMap,
+      long valueCount,
+      ScoreMode scoreMode,
+      int min,
+      int max,
+      boolean singleCollector) {
     if (valueCount > Integer.MAX_VALUE) {
       // We simply don't support more than
       throw new IllegalStateException("Can't collect more than [" + Integer.MAX_VALUE + "] ids");
@@ -77,14 +84,25 @@ class GlobalOrdinalsWithScoreCollectorManager implements CollectorManager<Collec
     } else {
       this.occurrences = null;
     }
-    this.locks = new Lock[numBlocks(valueCount)];
-    for (int i = 0; i < locks.length; i++) {
-      locks[i] = new ReentrantLock();
+    if (singleCollector) {
+      this.locks = null;
+    } else {
+      this.locks = new Lock[numBlocks(valueCount)];
+      for (int i = 0; i < locks.length; i++) {
+        locks[i] = new ReentrantLock();
+      }
     }
   }
 
   @Override
   public GlobalOrdinalsWithScoreCollector newCollector() {
+    if (locks == null) {
+      // Without locks, a second collector could race with the first one.
+      if (collectorCreated) {
+        throw new IllegalStateException("This collector manager supports a single collector");
+      }
+      collectorCreated = true;
+    }
     return switch (scoreMode) {
       case Total -> new Sum();
       case Min -> new Min();
@@ -134,7 +152,11 @@ class GlobalOrdinalsWithScoreCollectorManager implements CollectorManager<Collec
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       SortedDocValues docTermOrds = DocValues.getSorted(context.reader(), field);
-      return new OrdinalCollector(docTermOrds, globalOrds(context));
+      LongValues segmentOrdToGlobalOrdLookup = globalOrds(context);
+      if (locks == null) {
+        return new OrdinalCollector(docTermOrds, segmentOrdToGlobalOrdLookup);
+      }
+      return new LockingOrdinalCollector(docTermOrds, segmentOrdToGlobalOrdLookup);
     }
 
     @Override
@@ -142,7 +164,7 @@ class GlobalOrdinalsWithScoreCollectorManager implements CollectorManager<Collec
       return org.apache.lucene.search.ScoreMode.COMPLETE;
     }
 
-    final class OrdinalCollector implements LeafCollector {
+    class OrdinalCollector implements LeafCollector {
 
       private final SortedDocValues docTermOrds;
       private final LongValues segmentOrdToGlobalOrdLookup;
@@ -157,19 +179,11 @@ class GlobalOrdinalsWithScoreCollectorManager implements CollectorManager<Collec
       public void collect(int doc) throws IOException {
         if (docTermOrds.advanceExact(doc)) {
           final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(docTermOrds.ordValue());
-          // The scorer is owned by this leaf collector, so score outside the lock.
-          final double newScore = scorer.score();
-          Lock lock = locks[globalOrd / arraySize];
-          lock.lock();
-          try {
-            collectOrd(globalOrd, newScore);
-          } finally {
-            lock.unlock();
-          }
+          collectOrd(globalOrd, scorer.score());
         }
       }
 
-      private void collectOrd(int globalOrd, double newScore) {
+      void collectOrd(int globalOrd, double newScore) {
         collectedOrds.set(globalOrd);
         double existingScore = scores.getScore(globalOrd);
         doScore(globalOrd, existingScore, newScore);
@@ -181,6 +195,26 @@ class GlobalOrdinalsWithScoreCollectorManager implements CollectorManager<Collec
       @Override
       public void setScorer(Scorable scorer) throws IOException {
         this.scorer = scorer;
+      }
+    }
+
+    /** Takes the block's lock, so that several collectors can collect concurrently. */
+    final class LockingOrdinalCollector extends OrdinalCollector {
+
+      LockingOrdinalCollector(SortedDocValues docTermOrds, LongValues segmentOrdToGlobalOrdLookup) {
+        super(docTermOrds, segmentOrdToGlobalOrdLookup);
+      }
+
+      @Override
+      void collectOrd(int globalOrd, double newScore) {
+        // The score was computed by the caller, outside the lock.
+        Lock lock = locks[globalOrd / arraySize];
+        lock.lock();
+        try {
+          super.collectOrd(globalOrd, newScore);
+        } finally {
+          lock.unlock();
+        }
       }
     }
   }
@@ -218,30 +252,56 @@ class GlobalOrdinalsWithScoreCollectorManager implements CollectorManager<Collec
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       SortedDocValues docTermOrds = DocValues.getSorted(context.reader(), field);
       LongValues segmentOrdToGlobalOrdLookup = globalOrds(context);
-      return new LeafCollector() {
+      if (locks == null) {
+        return new NoScoreOrdinalCollector(docTermOrds, segmentOrdToGlobalOrdLookup);
+      }
+      return new LockingNoScoreOrdinalCollector(docTermOrds, segmentOrdToGlobalOrdLookup);
+    }
 
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {}
+    class NoScoreOrdinalCollector implements LeafCollector {
 
-        @Override
-        public void collect(int doc) throws IOException {
-          if (docTermOrds.advanceExact(doc)) {
-            final int globalOrd = (int) segmentOrdToGlobalOrdLookup.get(docTermOrds.ordValue());
-            Lock lock = locks[globalOrd / arraySize];
-            lock.lock();
-            try {
-              collectOrd(globalOrd);
-            } finally {
-              lock.unlock();
-            }
-          }
+      private final SortedDocValues docTermOrds;
+      private final LongValues segmentOrdToGlobalOrdLookup;
+
+      NoScoreOrdinalCollector(SortedDocValues docTermOrds, LongValues segmentOrdToGlobalOrdLookup) {
+        this.docTermOrds = docTermOrds;
+        this.segmentOrdToGlobalOrdLookup = segmentOrdToGlobalOrdLookup;
+      }
+
+      @Override
+      public void setScorer(Scorable scorer) throws IOException {}
+
+      @Override
+      public void collect(int doc) throws IOException {
+        if (docTermOrds.advanceExact(doc)) {
+          collectOrd((int) segmentOrdToGlobalOrdLookup.get(docTermOrds.ordValue()));
         }
+      }
 
-        private void collectOrd(int globalOrd) {
-          collectedOrds.set(globalOrd);
-          occurrences.increment(globalOrd);
+      void collectOrd(int globalOrd) {
+        collectedOrds.set(globalOrd);
+        occurrences.increment(globalOrd);
+      }
+    }
+
+    /** Takes the block's lock, so that several collectors can collect concurrently. */
+    final class LockingNoScoreOrdinalCollector extends NoScoreOrdinalCollector {
+
+      LockingNoScoreOrdinalCollector(
+          SortedDocValues docTermOrds, LongValues segmentOrdToGlobalOrdLookup) {
+        super(docTermOrds, segmentOrdToGlobalOrdLookup);
+      }
+
+      @Override
+      void collectOrd(int globalOrd) {
+        Lock lock = locks[globalOrd / arraySize];
+        lock.lock();
+        try {
+          super.collectOrd(globalOrd);
+        } finally {
+          lock.unlock();
         }
-      };
+      }
     }
 
     @Override
