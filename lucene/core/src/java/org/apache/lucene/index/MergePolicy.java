@@ -892,17 +892,16 @@ public abstract class MergePolicy {
   }
 
   /**
-   * Returns true if this single info is already fully merged (has no pending deletes, is in the
-   * same dir as the writer, and matches the current compound file setting
+   * Returns true if this single segment is already fully merged, that is, if it has no deletes to
+   * merge away. Its compound file state is not checked: rewriting a segment can change its size and
+   * so the compound file decision, and forceMerge would never finish.
    */
   protected final boolean isMerged(
       SegmentInfos infos, SegmentCommitInfo info, MergeContext mergeContext) throws IOException {
     assert mergeContext != null;
     int delCount = mergeContext.numDeletesToMerge(info);
     assert assertDelCount(delCount, info);
-    return delCount == 0
-        && info.info.getCodec().compoundFormat().useCompoundFile(size(info, mergeContext), this)
-            == info.info.getUseCompoundFile();
+    return delCount == 0;
   }
 
   /**

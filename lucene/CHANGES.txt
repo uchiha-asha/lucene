@@ -415,6 +415,11 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* GITHUB#17036: forceMerge no longer rewrites a single segment without deletes because its compound
+  file state doesn't match the current settings. This could loop forever when the compound file
+  size limit fell between the segment's size before and after packing. LogMergePolicy now leaves
+  such segments alone, like TieredMergePolicy already did. (Asharam)
+
 * GITHUB#17020: Reduce CachingTokenFilter memory use by not copying stale term bytes in
   CharTermAttributeImpl#clone. (Eugene Rizhkov)
 
