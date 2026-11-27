@@ -143,7 +143,7 @@ public class TestDocValuesRewriteMethod extends LuceneTestCase {
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String prefix = randomBound();
-      assertSame(
+      assertSameHits(
           new PrefixQuery(new Term(fieldName, prefix)),
           new PrefixQuery(new Term(fieldName, prefix), new DocValuesRewriteMethod()),
           new PrefixQuery(
@@ -159,7 +159,7 @@ public class TestDocValuesRewriteMethod extends LuceneTestCase {
       String upper = random().nextInt(10) == 0 ? null : randomBound();
       boolean includeLower = random().nextBoolean();
       boolean includeUpper = random().nextBoolean();
-      assertSame(
+      assertSameHits(
           TermRangeQuery.newStringRange(fieldName, lower, upper, includeLower, includeUpper),
           new TermRangeQuery(
               fieldName,
@@ -196,7 +196,7 @@ public class TestDocValuesRewriteMethod extends LuceneTestCase {
     return "";
   }
 
-  private void assertSame(Query inverted, Query docValues, Query docValuesWithSkip)
+  private void assertSameHits(Query inverted, Query docValues, Query docValuesWithSkip)
       throws IOException {
     TopDocs invertedDocs = searcher.search(inverted, 25);
     assertEquals(searcher.count(inverted), searcher.count(docValues));

@@ -218,12 +218,15 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
   private static OrdinalRange ordinalRange(MultiTermQuery query, SortedSetDocValues values)
       throws IOException {
     final long maxOrd = values.getValueCount() - 1;
-    if (query instanceof PrefixQuery prefixQuery) {
+    // Exact classes only: a subclass could override getTermsEnum to match other terms.
+    if (query.getClass() == PrefixQuery.class) {
+      PrefixQuery prefixQuery = (PrefixQuery) query;
       BytesRef prefix = prefixQuery.getPrefix().bytes();
       BytesRef end = prefixEnd(prefix);
       return new OrdinalRange(
           ceilOrd(values, prefix), end == null ? maxOrd : ceilOrd(values, end) - 1);
-    } else if (query instanceof TermRangeQuery rangeQuery) {
+    } else if (query.getClass() == TermRangeQuery.class) {
+      TermRangeQuery rangeQuery = (TermRangeQuery) query;
       BytesRef lower = rangeQuery.getLowerTerm();
       BytesRef upper = rangeQuery.getUpperTerm();
       long min;
