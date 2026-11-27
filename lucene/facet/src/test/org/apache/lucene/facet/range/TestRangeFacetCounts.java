@@ -23,12 +23,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
@@ -46,9 +49,13 @@ import org.apache.lucene.facet.MultiLongValuesSource;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
@@ -61,6 +68,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
@@ -1510,6 +1518,86 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     w.close();
     IOUtils.close(r, d);
+  }
+
+  public void testFastMatchQueryWeightCreatedOncePerReader() throws Exception {
+    Directory d = newDirectory();
+    IndexWriter w =
+        new IndexWriter(d, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    int numSegments = TestUtil.nextInt(random(), 2, 8);
+    for (int seg = 0; seg < numSegments; seg++) {
+      for (long l = 0; l < 100; l++) {
+        Document doc = new Document();
+        doc.add(new NumericDocValuesField("field", l));
+        doc.add(new StringField("parity", l % 2 == 0 ? "even" : "odd", Field.Store.NO));
+        w.addDocument(doc);
+      }
+      w.flush();
+    }
+    IndexReader r = DirectoryReader.open(w);
+    w.close();
+    assertTrue(r.leaves().size() >= numSegments);
+
+    IndexSearcher s = newSearcher(r);
+    FacetsCollector fc = s.search(MatchAllDocsQuery.INSTANCE, new FacetsCollectorManager());
+    AtomicInteger weightCount = new AtomicInteger();
+    Query fastMatchQuery =
+        new CountingWeightQuery(new TermQuery(new Term("parity", "even")), weightCount);
+
+    Facets facets =
+        new LongRangeFacetCounts(
+            "field",
+            LongValuesSource.fromLongField("field"),
+            fc,
+            fastMatchQuery,
+            new LongRange("less than 10", 0L, true, 10L, false),
+            new LongRange("90 or above", 90L, true, 100L, false));
+    assertEquals(1, weightCount.get());
+    FacetResult result = facets.getAllChildren("field");
+    assertEquals(2, result.labelValues.length);
+    assertEquals(5 * numSegments, result.labelValues[0].value.intValue());
+    assertEquals(5 * numSegments, result.labelValues[1].value.intValue());
+
+    IOUtils.close(r, d);
+  }
+
+  /** Counts how many times a weight is created for the wrapped query. */
+  private static class CountingWeightQuery extends Query {
+
+    private final Query in;
+    private final AtomicInteger weightCount;
+
+    CountingWeightQuery(Query in, AtomicInteger weightCount) {
+      this.in = in;
+      this.weightCount = weightCount;
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
+      weightCount.incrementAndGet();
+      return in.createWeight(searcher, scoreMode, boost);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      in.visit(visitor);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return sameClassAs(other) && in.equals(((CountingWeightQuery) other).in);
+    }
+
+    @Override
+    public int hashCode() {
+      return classHash() + in.hashCode();
+    }
+
+    @Override
+    public String toString(String field) {
+      return "CountingWeightQuery(" + in + ")";
+    }
   }
 
   private static class UsedQuery extends Query {

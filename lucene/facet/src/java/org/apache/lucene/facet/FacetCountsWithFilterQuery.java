@@ -44,6 +44,15 @@ public abstract class FacetCountsWithFilterQuery extends Facets {
    */
   protected final Query fastMatchQuery;
 
+  /**
+   * The weight of {@link #fastMatchQuery} for the reader in {@link #fastMatchWeightContext}. Facet
+   * counts call {@link #createIterator} once per leaf, so the query is rewritten and its weight is
+   * created once per top-level reader instead of once per leaf.
+   */
+  private Weight fastMatchWeight;
+
+  private IndexReaderContext fastMatchWeightContext;
+
   /** Create {@code FacetCounts} */
   protected FacetCountsWithFilterQuery(Query fastMatchQuery) {
     this.fastMatchQuery = fastMatchQuery;
@@ -68,10 +77,14 @@ public abstract class FacetCountsWithFilterQuery extends Facets {
 
     if (fastMatchQuery != null) {
       final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(hits.context());
-      final IndexSearcher searcher = new IndexSearcher(topLevelContext);
-      searcher.setQueryCache(null);
-      final Weight fastMatchWeight =
-          searcher.createWeight(searcher.rewrite(fastMatchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
+      if (fastMatchWeightContext != topLevelContext) {
+        final IndexSearcher searcher = new IndexSearcher(topLevelContext);
+        searcher.setQueryCache(null);
+        fastMatchWeight =
+            searcher.createWeight(
+                searcher.rewrite(fastMatchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
+        fastMatchWeightContext = topLevelContext;
+      }
       final Scorer s = fastMatchWeight.scorer(hits.context());
       if (s == null) {
         // no matching docs by the fast match query
