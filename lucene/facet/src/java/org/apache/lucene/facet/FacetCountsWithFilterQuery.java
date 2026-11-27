@@ -45,13 +45,14 @@ public abstract class FacetCountsWithFilterQuery extends Facets {
   protected final Query fastMatchQuery;
 
   /**
-   * The weight of {@link #fastMatchQuery} for the reader in {@link #fastMatchWeightContext}. Facet
-   * counts call {@link #createIterator} once per leaf, so the query is rewritten and its weight is
-   * created once per top-level reader instead of once per leaf.
+   * The weight of {@link #fastMatchQuery} and the top-level reader it was created for. Facet counts
+   * call {@link #createIterator} once per leaf, so the query is rewritten and its weight is created
+   * once per top-level reader instead of once per leaf. Both are held in one immutable object so
+   * that a weight is never paired with the wrong reader.
    */
-  private Weight fastMatchWeight;
+  private FastMatchWeight fastMatchWeight;
 
-  private IndexReaderContext fastMatchWeightContext;
+  private record FastMatchWeight(IndexReaderContext context, Weight weight) {}
 
   /** Create {@code FacetCounts} */
   protected FacetCountsWithFilterQuery(Query fastMatchQuery) {
@@ -77,15 +78,18 @@ public abstract class FacetCountsWithFilterQuery extends Facets {
 
     if (fastMatchQuery != null) {
       final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(hits.context());
-      if (fastMatchWeightContext != topLevelContext) {
+      FastMatchWeight fastMatch = fastMatchWeight;
+      if (fastMatch == null || fastMatch.context() != topLevelContext) {
         final IndexSearcher searcher = new IndexSearcher(topLevelContext);
         searcher.setQueryCache(null);
-        fastMatchWeight =
-            searcher.createWeight(
-                searcher.rewrite(fastMatchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
-        fastMatchWeightContext = topLevelContext;
+        fastMatch =
+            new FastMatchWeight(
+                topLevelContext,
+                searcher.createWeight(
+                    searcher.rewrite(fastMatchQuery), ScoreMode.COMPLETE_NO_SCORES, 1));
+        fastMatchWeight = fastMatch;
       }
-      final Scorer s = fastMatchWeight.scorer(hits.context());
+      final Scorer s = fastMatch.weight().scorer(hits.context());
       if (s == null) {
         // no matching docs by the fast match query
         return null;
