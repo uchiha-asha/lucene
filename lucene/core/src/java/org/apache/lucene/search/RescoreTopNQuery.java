@@ -163,7 +163,7 @@ public class RescoreTopNQuery extends Query {
    * Scores the candidate that has been in the ring longest, and so has had the most time to load,
    * then drops it.
    */
-  private static void scoreOldest(
+  private void scoreOldest(
       PrefetchRing ring, List<LeafReaderContext> leaves, DoubleValues[] leafValues, HitQueue queue)
       throws IOException {
     int leafOrd = ring.oldestLeaf();
@@ -221,12 +221,21 @@ public class RescoreTopNQuery extends Query {
     }
   }
 
-  private static void rescoreInto(HitQueue queue, DoubleValues values, int docBase, int docId)
+  private void rescoreInto(HitQueue queue, DoubleValues values, int docBase, int docId)
       throws IOException {
-    if (values.advanceExact(docId)) {
-      queue.insertWithOverflow(new ScoreDoc(docBase + docId, (float) values.doubleValue()));
-    } else {
-      queue.insertWithOverflow(new ScoreDoc(docBase + docId, 0f));
+    float score = values.advanceExact(docId) ? (float) values.doubleValue() : 0f;
+    int doc = docBase + docId;
+    if (queue.size() < n) {
+      queue.add(new ScoreDoc(doc, score));
+      return;
+    }
+    // The queue is full: replace the weakest hit in place if the candidate beats it, rather than
+    // allocating a ScoreDoc for every candidate.
+    ScoreDoc top = queue.top();
+    if (score > top.score || (score == top.score && doc < top.doc)) {
+      top.doc = doc;
+      top.score = score;
+      queue.updateTop();
     }
   }
 
