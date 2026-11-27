@@ -18,8 +18,10 @@ package org.apache.lucene.facet;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectorManager;
@@ -97,59 +99,68 @@ public class FacetsCollectorManager implements CollectorManager<FacetsCollector,
     // segments are partitioned, each partition will collect only the docs in its docid range, hence
     // there will be multiple MatchingDocs pointing to the same LeafReaderContext. As part of the
     // reduction we merge back partitions into a single MatchingDocs per segment.
-    Map<LeafReaderContext, FacetsCollector.MatchingDocs> matchingDocsMap = new HashMap<>();
+    // All partitions of a segment are merged at once, so that the doc ids and scores of each
+    // partition are copied once rather than again for every further partition of the segment.
+    Map<LeafReaderContext, List<FacetsCollector.MatchingDocs>> partitionsByLeaf = new HashMap<>();
     for (FacetsCollector facetsCollector : facetsCollectors) {
       for (FacetsCollector.MatchingDocs matchingDocs : facetsCollector.getMatchingDocs()) {
-        matchingDocsMap.compute(
-            matchingDocs.context(),
-            (_, existing) -> {
-              if (existing == null) {
-                return matchingDocs;
-              }
-              return merge(existing, matchingDocs);
-            });
+        partitionsByLeaf
+            .computeIfAbsent(matchingDocs.context(), _ -> new ArrayList<>(1))
+            .add(matchingDocs);
       }
     }
-    return matchingDocsMap.values();
+    List<FacetsCollector.MatchingDocs> reduced = new ArrayList<>(partitionsByLeaf.size());
+    for (List<FacetsCollector.MatchingDocs> partitions : partitionsByLeaf.values()) {
+      reduced.add(partitions.size() == 1 ? partitions.getFirst() : merge(partitions));
+    }
+    return reduced;
   }
 
-  private static FacetsCollector.MatchingDocs merge(
-      FacetsCollector.MatchingDocs matchingDocs1, FacetsCollector.MatchingDocs matchingDocs2) {
-    assert matchingDocs1.context() == matchingDocs2.context();
+  private static FacetsCollector.MatchingDocs merge(List<FacetsCollector.MatchingDocs> partitions) {
+    final LeafReaderContext context = partitions.getFirst().context();
+    // scores array is null when keepScores is false, and may be null when there are no matches for
+    // a segment partition, despite keepScores is true.
+    float[] lastScores = null;
+    int numWithScores = 0;
+    int scoresLength = 0;
+    for (FacetsCollector.MatchingDocs partition : partitions) {
+      assert partition.context() == context;
+      if (partition.scores() != null) {
+        lastScores = partition.scores();
+        numWithScores++;
+        scoresLength = Math.max(scoresLength, lastScores.length);
+      }
+    }
     final float[] scores;
-
-    // scores array is null when keepScores is true, and may be null when there are no matches for a
-    // segment partition, despite keepScores is true.
-    if (matchingDocs1.scores() == null && matchingDocs2.scores() == null) {
+    if (numWithScores == 0) {
       scores = new float[0];
+    } else if (numWithScores == 1) {
+      scores = lastScores;
     } else {
-      if (matchingDocs2.scores() == null) {
-        scores = matchingDocs1.scores();
-      } else if (matchingDocs1.scores() == null) {
-        scores = matchingDocs2.scores();
-      } else {
-        int length = Math.max(matchingDocs1.scores().length, matchingDocs2.scores().length);
-        // merge the arrays if both have values, their size is bound to the highest collected docid
-        scores = new float[length];
-        for (int i = 0; i < length; i++) {
-          float firstScore = i < matchingDocs1.scores().length ? matchingDocs1.scores()[i] : 0;
-          float secondScore = i < matchingDocs2.scores().length ? matchingDocs2.scores()[i] : 0;
-          assert (firstScore > 0 && secondScore > 0) == false;
-          scores[i] = Math.max(firstScore, secondScore);
+      // merge the arrays, their size is bound to the highest collected docid
+      scores = new float[scoresLength];
+      for (FacetsCollector.MatchingDocs partition : partitions) {
+        float[] partitionScores = partition.scores();
+        if (partitionScores == null) {
+          continue;
+        }
+        for (int i = 0; i < partitionScores.length; i++) {
+          assert (scores[i] > 0 && partitionScores[i] > 0) == false;
+          scores[i] = Math.max(scores[i], partitionScores[i]);
         }
       }
     }
-    DocIdSetBuilder docIdSetBuilder =
-        new DocIdSetBuilder(matchingDocs1.context().reader().maxDoc());
+    DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(context.reader().maxDoc());
+    int totalHits = 0;
     try {
-      docIdSetBuilder.add(matchingDocs1.bits().iterator());
-      docIdSetBuilder.add(matchingDocs2.bits().iterator());
+      for (FacetsCollector.MatchingDocs partition : partitions) {
+        docIdSetBuilder.add(partition.bits().iterator());
+        totalHits += partition.totalHits();
+      }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
-    int totalHits = matchingDocs1.totalHits() + matchingDocs2.totalHits();
-    return new FacetsCollector.MatchingDocs(
-        matchingDocs1.context(), docIdSetBuilder.build(), totalHits, scores);
+    return new FacetsCollector.MatchingDocs(context, docIdSetBuilder.build(), totalHits, scores);
   }
 
   /**
