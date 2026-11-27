@@ -59,12 +59,11 @@ public class TestFacetsCollectorManager extends LuceneTestCase {
         }
         w.addDocument(doc);
       }
-      if (random().nextBoolean()) {
-        w.forceMerge(1);
-      }
+      // a single segment, so that every slice but the first is a partition of it
+      w.forceMerge(1);
       try (IndexReader reader = w.getReader()) {
         IndexSearcher whole = new IndexSearcher(reader);
-        int maxDocsPerSlice = TestUtil.nextInt(random(), 1, numDocs);
+        int maxDocsPerSlice = TestUtil.nextInt(random(), 1, numDocs / 2);
         IndexSearcher partitioned =
             new IndexSearcher(reader, Runnable::run) {
               @Override
@@ -100,6 +99,7 @@ public class TestFacetsCollectorManager extends LuceneTestCase {
                   return null;
                 }
               });
+          assertTrue(collectors.size() > 1);
           Collections.shuffle(collectors, random());
           assertSameHits(expected, manager.reduce(collectors), keepScores);
         }
