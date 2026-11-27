@@ -28,6 +28,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -184,16 +185,15 @@ public class TestDocValuesRewriteMethod extends LuceneTestCase {
       return TestUtil.randomUnicodeString(random(), 3);
     }
     int doc = random().nextInt(reader.maxDoc());
-    for (LeafReaderContext ctx : reader.leaves()) {
-      if (doc < ctx.docBase + ctx.reader().maxDoc()) {
-        SortedSetDocValues values = DocValues.getSortedSet(ctx.reader(), fieldName);
-        if (values.advanceExact(doc - ctx.docBase)) {
-          String term = values.lookupOrd(values.nextOrd()).utf8ToString();
-          return term.substring(0, random().nextInt(term.length() + 1));
-        }
-      }
+    LeafReaderContext ctx = reader.leaves().get(ReaderUtil.subIndex(doc, reader.leaves()));
+    SortedSetDocValues values = DocValues.getSortedSet(ctx.reader(), fieldName);
+    if (values.advanceExact(doc - ctx.docBase) == false) {
+      return "";
     }
-    return "";
+    String term = values.lookupOrd(values.nextOrd()).utf8ToString();
+    // cut at a code point boundary so that the prefix is valid UTF-16
+    int numCodePoints = random().nextInt(term.codePointCount(0, term.length()) + 1);
+    return term.substring(0, term.offsetByCodePoints(0, numCodePoints));
   }
 
   private void assertSameHits(Query inverted, Query docValues, Query docValuesWithSkip)
