@@ -39,6 +39,7 @@ import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -151,6 +152,56 @@ public class TestUnifiedHighlighterTermVec extends UnifiedHighlighterTestBase {
     }
 
     ir.storedFields().document(0); // ensure this works because the ir hasn't been closed
+    ir.close();
+  }
+
+  /**
+   * Fields with offsets in postings and term vectors read the term vectors to filter the terms of a
+   * multi-term query. They should share the per-document term vector cache too.
+   */
+  public void testFetchTermVecsOncePerDocWithPostingsOffsets() throws IOException {
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
+
+    final int numFields = 2 + random().nextInt(3);
+    List<String> fields = new ArrayList<>(numFields);
+    for (int i = 0; i < numFields; i++) {
+      fields.add("body" + i);
+    }
+    final int numDocs = 1 + random().nextInt(5);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      for (String field : fields) {
+        doc.add(new Field(field, "some test text", postingsWithTvType));
+      }
+      iw.addDocument(doc);
+    }
+
+    DirectoryReader originalReader = iw.getReader();
+    IndexReader ir = new AssertOnceTermVecDirectoryReader(originalReader);
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(ir, false);
+    UnifiedHighlighter highlighter = UnifiedHighlighter.builder(searcher, indexAnalyzer).build();
+    BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+    for (String field : fields) {
+      // a multi-term query, so that the term vectors are needed with postings offsets
+      queryBuilder.add(new PrefixQuery(new Term(field, "tes")), BooleanClause.Occur.MUST);
+    }
+    BooleanQuery query = queryBuilder.build();
+    for (String field : fields) {
+      assertEquals(
+          UnifiedHighlighter.OffsetSource.POSTINGS_WITH_TERM_VECTORS,
+          highlighter.getFieldHighlighter(field, query, Set.of(), 1).getOffsetSource());
+    }
+    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+    assertEquals(numDocs, topDocs.totalHits.value());
+    Map<String, String[]> fieldToSnippets =
+        highlighter.highlightFields(fields.toArray(String[]::new), query, topDocs);
+    String[] expectedSnippetsByDoc = new String[numDocs];
+    Arrays.fill(expectedSnippetsByDoc, "some <b>test</b> text");
+    for (String field : fields) {
+      assertArrayEquals(expectedSnippetsByDoc, fieldToSnippets.get(field));
+    }
     ir.close();
   }
 

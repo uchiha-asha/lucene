@@ -842,7 +842,7 @@ public class UnifiedHighlighter {
             continue;
           }
           IndexReader indexReader =
-              (fieldHighlighter.getOffsetSource() == OffsetSource.TERM_VECTORS
+              (usesTermVectors(fieldHighlighter.getOffsetSource())
                       && indexReaderWithTermVecCache != null)
                   ? indexReaderWithTermVecCache
                   : searcher.getIndexReader();
@@ -884,6 +884,11 @@ public class UnifiedHighlighter {
    * When cacheCharsThreshold is 0, loadFieldValues() only fetches one document at a time. We
    * override it to be 0 in two circumstances:
    */
+  private static boolean usesTermVectors(OffsetSource offsetSource) {
+    return offsetSource == OffsetSource.TERM_VECTORS
+        || offsetSource == OffsetSource.POSTINGS_WITH_TERM_VECTORS;
+  }
+
   private int calculateOptimalCacheCharsThreshold(int numTermVectors, int numPostings) {
     if (numPostings == 0 && numTermVectors == 0) {
       // (1) When all fields are ANALYSIS there's no point in caching a batch of documents
